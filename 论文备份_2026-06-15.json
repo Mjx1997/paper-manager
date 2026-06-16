@@ -1029,7 +1029,7 @@
       "title": "Optimization of Oil Groove Configuration for Low-Speed Heavy Duty Wet Clutches Through Thermal-Stress Field Analysis Based on Multi-objective Genetic Algorithm",
       "meetingName": "第八届人工智能、计算机科学与信息处理国际学术会议（AICSIP 2026）",
       "salesPerson": "肖老师",
-      "status": "duplicate",
+      "status": "withdrawn",
       "uploadDate": "2026-06-02",
       "requestDate": "2026-06-09",
       "withdrawDate": "2026-06-10",
@@ -2362,6 +2362,12 @@
       "action": "UPDATE",
       "detail": "编辑: SECMME-4503062",
       "time": "2026-06-16 06:25"
+    },
+    {
+      "itemId": "1781491471645",
+      "action": "UPDATE",
+      "detail": "编辑: SECMME-4503062",
+      "time": "2026-06-16 06:25"
     }
   ],
   "batches": [
@@ -3060,5 +3066,5 @@
     "pageSize": 15,
     "theme": "light"
   },
-  "savedAt": "2026-06-16T06:25:43.275Z"
+  "savedAt": "2026-06-16T06:25:56.475Z"
 }
