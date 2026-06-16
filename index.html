@@ -1,0 +1,2690 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>论文管理系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+    <style>
+        :root {
+            --bg-base: #f0f2f5;
+            --bg-elevated: #ffffff;
+            --bg-sunken: #f5f5f5;
+            --border: #d9d9d9;
+            --border-light: #f0f0f0;
+            --text-primary: rgba(0,0,0,0.88);
+            --text-secondary: rgba(0,0,0,0.65);
+            --text-tertiary: rgba(0,0,0,0.45);
+            --accent: #1677ff;
+            --accent-hover: #4096ff;
+            --accent-soft: #e6f4ff;
+            --success: #52c41a;
+            --warning: #faad14;
+            --error: #f5222d;
+            --purple: #722ed1;
+            --pink: #eb2f96;
+            --cyan: #13c2c2;
+            --radius: 6px;
+            --radius-sm: 4px;
+            --shadow: 0 1px 2px rgba(0,0,0,0.03), 0 1px 6px -1px rgba(0,0,0,0.02);
+            --shadow-lg: 0 3px 6px rgba(0,0,0,0.04), 0 9px 28px 8px rgba(0,0,0,0.02);
+            --shadow-xl: 0 8px 32px rgba(0,0,0,0.12);
+        }
+        [data-theme="dark"] {
+            --bg-base: #141414;
+            --bg-elevated: #1f1f1f;
+            --bg-sunken: #2a2a2a;
+            --border: #434343;
+            --border-light: #333;
+            --text-primary: rgba(255,255,255,0.85);
+            --text-secondary: rgba(255,255,255,0.65);
+            --text-tertiary: rgba(255,255,255,0.45);
+            --accent: #177ddc;
+            --accent-hover: #3c9ae8;
+            --accent-soft: rgba(23,125,220,0.15);
+            --success: #49aa19;
+            --warning: #d89614;
+            --error: #d32029;
+            --purple: #9254de;
+            --pink: #c41d7f;
+            --cyan: #36cfc9;
+            --shadow: 0 1px 2px rgba(0,0,0,0.2);
+            --shadow-lg: 0 6px 16px rgba(0,0,0,0.3);
+            --shadow-xl: 0 8px 32px rgba(0,0,0,0.4);
+        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+            background: var(--bg-base);
+            color: var(--text-primary);
+            min-height: 100vh;
+            font-size: 14px;
+            line-height: 1.5;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app-header {
+            background: var(--bg-elevated);
+            border-bottom: 1px solid var(--border-light);
+            padding: 0 24px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+        }
+
+        .stats-panel {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 20px 24px 0;
+        }
+        .stats-main {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 12px;
+        }
+        .stat-card {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius);
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .stat-card:hover {
+            border-color: var(--border);
+            box-shadow: var(--shadow-lg);
+        }
+        .stat-card.active {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px var(--accent);
+        }
+        .stat-number {
+            font-size: 28px;
+            font-weight: 600;
+            line-height: 1;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+            font-variant-numeric: tabular-nums;
+        }
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            font-weight: 500;
+        }
+
+        .sub-stats {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 14px;
+            padding-top: 14px;
+            border-top: 1px solid var(--border-light);
+        }
+        .sub-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.15s;
+        }
+        .sub-pill:hover { opacity: 0.8; }
+        .sub-pill.active { box-shadow: 0 0 0 1px currentColor; }
+
+        .toolbar {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 16px 24px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border-radius: var(--radius);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.15s;
+            white-space: nowrap;
+            line-height: 1.4;
+        }
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+        .btn-primary:hover { background: var(--accent-hover); }
+        .btn-secondary {
+            background: var(--bg-elevated);
+            color: var(--text-secondary);
+            border-color: var(--border);
+        }
+        .btn-secondary:hover {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+        .btn-danger {
+            background: var(--error);
+            color: white;
+        }
+        .btn-danger:hover { background: #ff4d4f; }
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        .btn-success:hover { background: #73d13d; }
+        .btn-sm { padding: 4px 8px; font-size: 12px; }
+        .btn-icon { padding: 6px; }
+
+        .search-box {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 6px 12px;
+            font-size: 13px;
+            color: var(--text-primary);
+            outline: none;
+            width: 260px;
+            transition: all 0.15s;
+        }
+        .search-box:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-soft);
+        }
+        .search-box::placeholder { color: var(--text-tertiary); }
+
+        .filter-pills {
+            display: flex;
+            gap: 4px;
+            background: var(--bg-sunken);
+            padding: 4px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border-light);
+        }
+        .filter-pill {
+            padding: 5px 12px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-tertiary);
+            transition: all 0.12s;
+            border: 1px solid transparent;
+        }
+        .filter-pill:hover { color: var(--text-secondary); background: rgba(0,0,0,0.04); }
+        .filter-pill.active {
+            background: var(--bg-elevated);
+            color: var(--accent);
+            border-color: var(--border);
+            box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+        }
+
+        .table-wrap {
+            max-width: 1440px;
+            margin: 0 auto;
+            padding: 0 24px 24px;
+        }
+        .table-container {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius);
+            overflow: hidden;
+            box-shadow: var(--shadow);
+        }
+        table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            font-size: 13px;
+        }
+        th {
+            background: var(--bg-sunken);
+            padding: 10px 14px;
+            text-align: left;
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--text-tertiary);
+            border-bottom: 1px solid var(--border-light);
+            white-space: nowrap;
+            user-select: none;
+        }
+        td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--border-light);
+            color: var(--text-secondary);
+            vertical-align: middle;
+            transition: background 0.1s;
+        }
+        tr:hover td {
+            background: var(--bg-sunken);
+            color: var(--text-primary);
+        }
+        tr:last-child td { border-bottom: none; }
+
+        .copy-cell {
+            cursor: pointer;
+            font-size: 12px;
+            color: var(--text-primary);
+            position: relative;
+        }
+        .copy-cell:hover { color: var(--accent); }
+        .copy-hint {
+            position: absolute;
+            top: -24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--text-primary);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s;
+            font-family: sans-serif;
+            z-index: 10;
+        }
+        .copy-cell.copied .copy-hint { opacity: 1; }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+            line-height: 1.4;
+            border: 1px solid transparent;
+        }
+        .b-uploaded { background: #f6ffed; color: #389e0d; border-color: #b7eb8f; }
+        .b-requested { background: #fff7e6; color: #d46b08; border-color: #ffd591; }
+        .b-withdrawn { background: #f6ffed; color: #389e0d; border-color: #b7eb8f; }
+        .b-rejected { background: #fff2f0; color: #cf1322; border-color: #ffccc7; }
+        .b-update-req { background: #fffbe6; color: #ad6800; border-color: #ffe58f; }
+        .b-updated { background: #f6ffed; color: #389e0d; border-color: #b7eb8f; }
+        .b-repair-req { background: #fff0f6; color: #c41d7f; border-color: #ffadd2; }
+        .b-repaired { background: #f6ffed; color: #389e0d; border-color: #b7eb8f; }
+        .b-duplicate { background: #f9f0ff; color: #531dab; border-color: #d3adf7; }
+
+        [data-theme="dark"] .b-uploaded { background: rgba(82,196,26,0.15); color: #95de64; border-color: rgba(82,196,26,0.3); }
+        [data-theme="dark"] .b-requested { background: rgba(250,173,20,0.15); color: #ffd666; border-color: rgba(250,173,20,0.3); }
+        [data-theme="dark"] .b-withdrawn { background: rgba(82,196,26,0.15); color: #95de64; border-color: rgba(82,196,26,0.3); }
+        [data-theme="dark"] .b-rejected { background: rgba(245,34,45,0.15); color: #ff7875; border-color: rgba(245,34,45,0.3); }
+        [data-theme="dark"] .b-update-req { background: rgba(250,173,20,0.15); color: #ffd666; border-color: rgba(250,173,20,0.3); }
+        [data-theme="dark"] .b-updated { background: rgba(82,196,26,0.15); color: #95de64; border-color: rgba(82,196,26,0.3); }
+        [data-theme="dark"] .b-repair-req { background: rgba(235,47,150,0.15); color: #ff85c0; border-color: rgba(235,47,150,0.3); }
+        [data-theme="dark"] .b-repaired { background: rgba(82,196,26,0.15); color: #95de64; border-color: rgba(82,196,26,0.3); }
+        [data-theme="dark"] .b-duplicate { background: rgba(114,46,209,0.15); color: #b37feb; border-color: rgba(114,46,209,0.3); }
+
+        .dup-mark {
+            display: inline-flex;
+            align-items: center;
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 10px;
+            font-weight: 700;
+            margin-right: 6px;
+            background: #fff2f0;
+            color: #cf1322;
+            border: 1px solid #ffccc7;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .dropdown { position: relative; display: inline-block; }
+        .dropdown-menu {
+            position: fixed;
+            z-index: 9999;
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-xl);
+            min-width: 160px;
+            display: none;
+            overflow: hidden;
+            padding: 4px;
+        }
+        .dropdown-menu.active { display: block; }
+        .dropdown-item {
+            padding: 7px 10px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-secondary);
+            border-radius: var(--radius-sm);
+            transition: all 0.1s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .dropdown-item:hover {
+            background: var(--bg-sunken);
+            color: var(--text-primary);
+        }
+        .dropdown-item.danger { color: var(--error); }
+        .dropdown-item.danger:hover { background: #fff2f0; color: #cf1322; }
+
+        .pagination-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-light);
+            background: var(--bg-sunken);
+        }
+        .page-info {
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+        .page-btns { display: flex; gap: 6px; }
+        .page-btn {
+            padding: 4px 10px;
+            border: 1px solid var(--border);
+            background: var(--bg-elevated);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            color: var(--text-secondary);
+            font-size: 12px;
+            transition: all 0.12s;
+        }
+        .page-btn:hover:not(:disabled) {
+            color: var(--accent);
+            border-color: var(--accent);
+        }
+        .page-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.45);
+            z-index: 998;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            backdrop-filter: blur(4px);
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-box {
+            background: var(--bg-elevated);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            width: 100%;
+            max-width: 900px;
+            max-height: 88vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+        }
+        .modal-head {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-sunken);
+        }
+        .modal-body {
+            padding: 20px 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+        .modal-foot {
+            padding: 12px 24px;
+            border-top: 1px solid var(--border-light);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            background: var(--bg-sunken);
+        }
+
+        .review-grid {
+            display: grid;
+            grid-template-columns: 1fr 260px;
+            gap: 24px;
+        }
+        .info-card {
+            background: var(--bg-sunken);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+        }
+        .info-label {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            margin-bottom: 4px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .info-value {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--text-primary);
+            word-break: break-all;
+            line-height: 1.5;
+        }
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 0;
+            position: relative;
+            padding-left: 6px;
+        }
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 13px;
+            top: 6px;
+            bottom: 6px;
+            width: 1px;
+            background: var(--border);
+        }
+        .timeline-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 5px 0;
+            position: relative;
+            z-index: 1;
+        }
+        .timeline-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--border);
+            border: 2px solid var(--bg-elevated);
+            flex-shrink: 0;
+        }
+        .timeline-row.active .timeline-dot { background: var(--accent); }
+        .timeline-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+        .timeline-text strong {
+            color: var(--text-primary);
+            font-weight: 500;
+            margin-right: 6px;
+        }
+
+        .section-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+        .flow-pills {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+        .flow-pill {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: all 0.12s;
+        }
+        .flow-pill:hover {
+            opacity: 0.85;
+            transform: translateY(-1px);
+        }
+
+        .tool-row {
+            display: flex;
+            gap: 8px;
+        }
+        .tool-row .btn {
+            flex: 1;
+            justify-content: center;
+        }
+
+        .activity-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .activity-item {
+            font-size: 12px;
+            color: var(--text-secondary);
+            padding: 6px 0;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .activity-item:last-child { border-bottom: none; }
+        .activity-time {
+            font-size: 11px;
+            color: var(--text-tertiary);
+            margin-bottom: 2px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+        }
+        .form-unit {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .form-unit.full { grid-column: 1 / -1; }
+        .form-label {
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-secondary);
+        }
+        .form-input, .form-select, .form-textarea {
+            background: var(--bg-sunken);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            padding: 7px 10px;
+            font-size: 13px;
+            color: var(--text-primary);
+            outline: none;
+            transition: all 0.15s;
+            font-family: inherit;
+        }
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 2px var(--accent-soft);
+            background: var(--bg-elevated);
+        }
+        .form-textarea { resize: vertical; min-height: 70px; line-height: 1.5; }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 10px 16px;
+            border-radius: var(--radius);
+            color: white;
+            font-weight: 500;
+            font-size: 13px;
+            z-index: 10000;
+            transform: translateX(150%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: var(--shadow-xl);
+            pointer-events: none;
+        }
+        .toast.active { transform: translateX(0); }
+        .toast-success { background: var(--success); }
+        .toast-error { background: var(--error); }
+        .toast-info { background: var(--accent); }
+
+        .batch-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .batch-card {
+            background: var(--bg-sunken);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius);
+            overflow: hidden;
+        }
+        .batch-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background 0.1s;
+        }
+        .batch-header:hover {
+            background: var(--bg-base);
+        }
+        .batch-time {
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        .batch-stats {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+        .batch-stat {
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .batch-stat.add { color: var(--success); }
+        .batch-stat.update { color: var(--accent); }
+        .batch-stat.dup { color: var(--purple); }
+        .batch-stat.fail { color: var(--error); }
+        .batch-detail {
+            padding: 0 16px 12px;
+            display: none;
+        }
+        .batch-detail.active { display: block; }
+        .detail-section {
+            margin-bottom: 10px;
+        }
+        .detail-title {
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-tertiary);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+        }
+        .detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            font-size: 12px;
+            border-bottom: 1px solid var(--border-light);
+        }
+        .detail-item:last-child { border-bottom: none; }
+        .detail-item.fail {
+            color: var(--error);
+            background: #fff2f0;
+            margin: 0 -16px;
+            padding: 4px 16px;
+        }
+
+        .preview-block { margin-bottom: 14px; }
+        .preview-head {
+            font-size: 12px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .preview-list {
+            background: var(--bg-sunken);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-sm);
+            max-height: 140px;
+            overflow-y: auto;
+        }
+        .preview-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 6px 12px;
+            border-bottom: 1px solid var(--border-light);
+            font-size: 12px;
+        }
+        .preview-row:last-child { border-bottom: none; }
+
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-tertiary); }
+
+        @media (max-width: 1200px) {
+            .stats-main { grid-template-columns: repeat(3, 1fr); }
+            .review-grid { grid-template-columns: 1fr; }
+            .form-grid { grid-template-columns: 1fr; }
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 768px) {
+            .stats-main { grid-template-columns: repeat(2, 1fr); }
+            .toolbar { flex-direction: column; align-items: stretch; }
+            .search-box { width: 100%; }
+        }
+
+        /* 设置页面分组样式 */
+        .settings-group { margin-bottom: 20px; }
+        .settings-group:last-child { margin-bottom: 0; }
+        .settings-group-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 10px;
+            padding-left: 2px;
+        }
+        .settings-icon {
+            font-size: 16px;
+            line-height: 1;
+        }
+        .settings-card {
+            background: var(--bg-sunken);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius);
+            padding: 16px;
+        }
+        .settings-hint {
+            font-size: 12px;
+            color: var(--text-tertiary);
+            margin-top: 6px;
+            line-height: 1.5;
+        }
+        .settings-hint code {
+            background: var(--bg-elevated);
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-family: "SF Mono", ui-monospace, Menlo, monospace;
+            font-size: 11px;
+            border: 1px solid var(--border-light);
+        }
+        .backup-section { }
+        .backup-status {
+            font-size: 11px;
+            font-weight: 600;
+            padding: 2px 8px;
+            border-radius: 10px;
+            background: var(--bg-elevated);
+            color: var(--text-tertiary);
+            border: 1px solid var(--border-light);
+        }
+        .backup-status.active {
+            background: #f6ffed;
+            color: #389e0d;
+            border-color: #b7eb8f;
+        }
+        .backup-status.error {
+            background: #fff2f0;
+            color: #cf1322;
+            border-color: #ffccc7;
+        }
+
+        /* Switch 开关 */
+        .switch {
+            position: relative;
+            display: inline-block;
+            width: 40px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+        .switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        .switch-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--border);
+            transition: .2s;
+            border-radius: 22px;
+        }
+        .switch-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .2s;
+            border-radius: 50%;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+        input:checked + .switch-slider {
+            background-color: var(--success);
+        }
+        input:checked + .switch-slider:before {
+            transform: translateX(18px);
+        }
+        [data-theme="dark"] .switch-slider:before {
+            background-color: var(--bg-elevated);
+        }
+    </style>
+<base target="_blank">
+<base target="_blank">
+<base target="_blank">
+<base target="_blank">
+<base target="_blank">
+</head>
+<body>
+
+<div id="toast" class="toast"></div>
+
+<header class="app-header">
+    <div style="display: flex; align-items: center; gap: 10px;">
+        <div style="font-size: 18px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.3px;">📑 论文管理系统</div>
+        <span style="font-size: 11px; color: var(--text-tertiary); background: var(--bg-sunken); padding: 2px 8px; border-radius: 4px; border: 1px solid var(--border-light); font-weight: 500;">本地版</span>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+        <button class="btn btn-secondary btn-sm" onclick="showRecycleBin()">🗑 回收站</button>
+        <button class="btn btn-secondary btn-sm" onclick="showImportHistory()">📥 导入记录</button>
+        <button class="btn btn-secondary btn-sm" onclick="openConfig()">⚙️ 设置</button>
+        <button class="btn btn-secondary btn-icon" onclick="toggleTheme()" id="themeBtn" style="font-size: 15px;">🌙</button>
+    </div>
+</header>
+
+<div class="stats-panel">
+    <div class="stats-main" id="statsMain"></div>
+    <div class="sub-stats" id="subStats"></div>
+</div>
+
+<div class="toolbar">
+    <button class="btn btn-primary" onclick="openEditModal()">➕ 新增</button>
+    <button class="btn btn-secondary" onclick="document.getElementById('excelInput').click()">📤 导入Excel</button>
+    <input type="file" id="excelInput" style="display: none;" accept=".xlsx,.xls,.csv" onchange="handleExcelImport(this)">
+    <button class="btn btn-secondary" onclick="exportExcel()">📥 导出Excel</button>
+    <button class="btn btn-secondary" onclick="autoMatchSales()">🔄 匹配销售</button>
+
+    <!-- 批量操作栏 -->
+    <div id="batchBar" style="display: none; align-items: center; gap: 10px; background: var(--bg-elevated); border: 1px solid var(--accent); border-radius: var(--radius); padding: 6px 12px; box-shadow: var(--shadow-lg); animation: fadeIn 0.2s;">
+        <span style="font-size: 13px; font-weight: 600; color: var(--accent); white-space: nowrap;">已选 <span id="batchCount">0</span> 项</span>
+        <div style="width: 1px; height: 18px; background: var(--border-light);"></div>
+        <div class="dropdown">
+            <button class="btn btn-primary btn-sm" onclick="toggleBatchStatusMenu(this)">🔄 改状态</button>
+            <div class="dropdown-menu" id="batchStatusMenu" style="max-height: 320px; overflow-y: auto;">
+                <div class="dropdown-item" onclick="batchChangeStatus('uploaded')">🟢 已上传</div>
+                <div class="dropdown-item" onclick="batchChangeStatus('requested')">🟠 撤稿中</div>
+                <div class="dropdown-item" onclick="batchChangeStatus('withdrawn')">🟢 已撤稿</div>
+                <div class="dropdown-item" onclick="batchChangeStatus('rejected')">🔴 已拒稿</div>
+                <div class="dropdown-item" onclick="batchChangeStatus('update_requested')">🟡 申请更新</div>
+                <div class="dropdown-item" onclick="batchChangeStatus('updated')">🟢 已更新</div>
+                <div class="dropdown-item" onclick="batchChangeStatus('repair_requested')">🟣 返修中</div>
+                <div class="dropdown-item" onclick="batchChangeStatus('repaired')">🟢 已返修</div>
+                <div class="dropdown-item" onclick="batchChangeStatus('duplicate')">🟣 重复</div>
+            </div>
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="batchDelete()">🗑 删除</button>
+        <button class="btn btn-secondary btn-sm" onclick="clearSelection()">✕ 取消</button>
+    </div>
+    
+    <input type="text" class="search-box" id="searchInput" placeholder="搜索原编号、标题、投稿ID、会议名称..." oninput="debounceSearch()">
+    
+    <div class="filter-pills">
+        <div class="filter-pill active" data-status="all" onclick="filterByStatus('all')">全部</div>
+        <div class="filter-pill" data-status="reviewing" onclick="filterByStatus('reviewing')">已上传</div>
+        <div class="filter-pill" data-status="processing" onclick="filterByStatus('processing')">处理中</div>
+        <div class="filter-pill" data-status="finished" onclick="filterByStatus('finished')">已完结</div>
+    </div>
+</div>
+
+<div class="table-wrap">
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width: 36px;"><input type="checkbox" id="chkAll" onchange="checkAll(this)"></th>
+                    <th style="width: 90px;">原编号</th>
+                    <th style="width: 90px;">投稿ID</th>
+                    <th style="width: 150px;">会议名称</th>
+                    <th style="width: 180px;">论文标题</th>
+                    <th style="width: 70px; text-align: center;">状态</th>
+                    <th style="width: 80px; text-align: center;">销售老师</th>
+                    <th style="width: 90px; text-align: center;">状态更新</th>
+                    <th style="width: 110px; text-align: center;">备注</th>
+                    <th style="width: 100px; text-align: center;">操作</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody"></tbody>
+        </table>
+        <div class="pagination-bar">
+            <div class="page-info" id="pageInfo">共 0 条</div>
+            <div class="page-btns">
+                <button class="page-btn" id="btnPrev" onclick="changePage(-1)">上一页</button>
+                <button class="page-btn" id="btnNext" onclick="changePage(1)">下一页</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="reviewModal">
+    <div class="modal-box" style="max-width: 940px;">
+        <div class="modal-head">
+            <div>
+                <div style="font-size: 20px; font-weight: 600; color: var(--text-primary); letter-spacing: -0.3px;" id="reviewOriginalId">-</div>
+                <div style="margin-top: 6px;" id="reviewBadge"></div>
+            </div>
+            <button class="btn btn-secondary btn-icon" onclick="closeModal('reviewModal')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="review-grid">
+                <div style="display: flex; flex-direction: column; gap: 14px;">
+                    <div class="info-card">
+                        <div class="info-label">论文标题</div>
+                        <div class="info-value" style="font-size: 15px; font-weight: 600; line-height: 1.5;" id="reviewTitle">-</div>
+                    </div>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                        <div class="info-card">
+                            <div class="info-label">投稿ID</div>
+                            <div class="info-value" id="reviewSubmissionId">-</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">会议名称</div>
+                            <div class="info-value" id="reviewMeeting">-</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">销售老师</div>
+                            <div class="info-value" id="reviewSales">-</div>
+                        </div>
+                        <div class="info-card">
+                            <div class="info-label">系统ID</div>
+                            <div class="info-value" style="font-size: 11px; color: var(--text-tertiary); font-family: monospace;" id="reviewId">-</div>
+                        </div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">时间线</div>
+                        <div class="timeline" id="reviewTimeline" style="margin-top: 6px;"></div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">备注</div>
+                        <div id="reviewRemark" style="margin-top: 4px; color: var(--text-secondary); font-size: 13px; line-height: 1.6; white-space: pre-wrap;">-</div>
+                    </div>
+                    <div class="info-card">
+                        <div class="info-label">操作日志</div>
+                        <div style="margin-top: 6px; max-height: 160px; overflow-y: auto;">
+                            <table style="width: 100%; font-size: 12px;">
+                                <thead>
+                                    <tr style="color: var(--text-tertiary);">
+                                        <th style="text-align: left; padding: 4px; font-weight: 600;">时间</th>
+                                        <th style="text-align: left; padding: 4px; font-weight: 600;">动作</th>
+                                        <th style="text-align: left; padding: 4px; font-weight: 600;">详情</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reviewLogs"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div style="display: flex; flex-direction: column; gap: 16px;">
+                    <div>
+                        <div class="section-title">状态流转</div>
+                        <div class="flow-pills" id="reviewFlowPills"></div>
+                    </div>
+                    <div>
+                        <div class="section-title">快捷操作</div>
+                        <div class="tool-row">
+                            <button class="btn btn-secondary btn-sm" style="flex: 1;" onclick="editFromReview()">🖊️ 编辑</button>
+                            <button class="btn btn-secondary btn-sm" style="flex: 1;" onclick="copyFromReview()">📋 复制</button>
+                        </div>
+                        <button class="btn btn-danger btn-sm" style="width: 100%; margin-top: 8px;" onclick="deleteFromReview()">🗑️ 删除至回收站</button>
+                    </div>
+                    <div>
+                        <div class="section-title">最近动态</div>
+                        <div class="activity-list" id="reviewActivity"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn btn-secondary" onclick="closeModal('reviewModal')">关闭</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="editModal">
+    <div class="modal-box" style="max-width: 600px;">
+        <div class="modal-head">
+            <div style="font-size: 16px; font-weight: 600;" id="editTitle">新增稿件</div>
+            <button class="btn btn-secondary btn-icon" onclick="closeModal('editModal')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="form-grid">
+                <div class="form-unit">
+                    <label class="form-label">原编号 *</label>
+                    <input class="form-input" id="f_originalId" placeholder="如 51-001">
+                </div>
+                <div class="form-unit">
+                    <label class="form-label">投稿ID</label>
+                    <input class="form-input" id="f_submissionId">
+                </div>
+                <div class="form-unit full">
+                    <label class="form-label">论文标题</label>
+                    <input class="form-input" id="f_title">
+                </div>
+                <div class="form-unit">
+                    <label class="form-label">会议名称</label>
+                    <input class="form-input" id="f_meetingName">
+                </div>
+                <div class="form-unit">
+                    <label class="form-label">销售老师</label>
+                    <input class="form-input" id="f_salesPerson" placeholder="留空自动匹配">
+                </div>
+                <div class="form-unit">
+                    <label class="form-label">状态</label>
+                    <select class="form-select" id="f_status">
+                        <option value="uploaded">已上传</option>
+                        <option value="accepted">录用</option>
+                        <option value="requested">撤稿中</option>
+                        <option value="withdrawn">已撤稿</option>
+                        <option value="rejected">已拒稿</option>
+                        <option value="update_requested">申请更新</option>
+                        <option value="updated">已更新</option>
+                        <option value="repair_requested">返修中</option>
+                        <option value="repaired">已返修</option>
+                        <option value="duplicate">重复</option>
+                    </select>
+                </div>
+                <div class="form-unit">
+                    <label class="form-label">上传日期</label>
+                    <input type="date" class="form-input" id="f_uploadDate">
+                </div>
+                <div class="form-unit">
+                    <label class="form-label">申请日期</label>
+                    <input type="date" class="form-input" id="f_requestDate">
+                </div>
+                <div class="form-unit">
+                    <label class="form-label">完成日期</label>
+                    <input type="date" class="form-input" id="f_withdrawDate">
+                </div>
+                <div class="form-unit full">
+                    <label class="form-label">备注</label>
+                    <textarea class="form-textarea" id="f_remark" rows="3"></textarea>
+                </div>
+                <div class="form-unit full" style="display: flex; align-items: center; gap: 8px;">
+                    <input type="checkbox" id="f_wasDuplicate" style="width: 16px; height: 16px;">
+                    <label for="f_wasDuplicate" style="font-size: 13px; color: var(--text-secondary); cursor: pointer;">标记为历史重复（标题前显示红色重复标识）</label>
+                </div>
+            </div>
+            <input type="hidden" id="f_id">
+        </div>
+        <div class="modal-foot">
+            <button class="btn btn-primary" onclick="submitForm()">💾 保存</button>
+            <button class="btn btn-secondary" onclick="closeModal('editModal')">取消</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="importModal">
+    <div class="modal-box" style="max-width: 680px;">
+        <div class="modal-head">
+            <div style="font-size: 16px; font-weight: 600;">📥 导入预览</div>
+            <button class="btn btn-secondary btn-icon" onclick="closeModal('importModal')">✕</button>
+        </div>
+        <div class="modal-body" id="importPreviewBody"></div>
+        <div class="modal-foot">
+            <button class="btn btn-primary" onclick="confirmImport()">✅ 确认写入</button>
+            <button class="btn btn-secondary" onclick="closeModal('importModal')">取消</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="historyModal">
+    <div class="modal-box" style="max-width: 720px;">
+        <div class="modal-head">
+            <div style="font-size: 16px; font-weight: 600;">📥 导入记录</div>
+            <button class="btn btn-secondary btn-icon" onclick="closeModal('historyModal')">✕</button>
+        </div>
+        <div class="modal-body" id="historyBody">
+            <div style="text-align: center; color: var(--text-tertiary); padding: 40px;">暂无导入记录</div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn btn-danger" onclick="clearAllBatches()">清空记录</button>
+            <button class="btn btn-secondary" onclick="closeModal('historyModal')">关闭</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="configModal">
+    <div class="modal-box" style="max-width: 560px;">
+        <div class="modal-head">
+            <div style="font-size: 16px; font-weight: 600;">⚙️ 系统设置</div>
+            <button class="btn btn-secondary btn-icon" onclick="closeModal('configModal')">✕</button>
+        </div>
+        <div class="modal-body" style="padding: 20px 24px;">
+
+            <!-- 基础设置 -->
+            <div class="settings-group">
+                <div class="settings-group-title">
+                    <span class="settings-icon" style="color: var(--accent);">📋</span>
+                    <span>基础设置</span>
+                </div>
+                <div class="settings-card">
+                    <div class="form-unit" style="margin-bottom: 14px;">
+                        <label class="form-label">销售老师匹配规则（前缀=老师名，每行一条）</label>
+                        <textarea class="form-textarea" id="configRules" rows="5" placeholder="51=周老师&#10;52=康老师&#10;1=陈老师"></textarea>
+                        <div class="settings-hint">系统会根据原编号前缀自动匹配销售老师，无匹配时 fallback 到默认分配</div>
+                    </div>
+                    <div class="form-unit">
+                        <label class="form-label">编号不含"-"时默认分配</label>
+                        <input class="form-input" id="configDefault" placeholder="如：方老师">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 显示设置 -->
+            <div class="settings-group">
+                <div class="settings-group-title">
+                    <span class="settings-icon" style="color: var(--purple);">🎨</span>
+                    <span>显示设置</span>
+                </div>
+                <div class="settings-card">
+                    <div class="form-unit" style="margin-bottom: 14px;">
+                        <label class="form-label">每页显示条数</label>
+                        <select class="form-select" id="configPageSize">
+                            <option value="15">15 条</option>
+                            <option value="30">30 条</option>
+                            <option value="50">50 条</option>
+                            <option value="100">100 条</option>
+                        </select>
+                    </div>
+                    <div class="form-unit" style="display: flex; align-items: center; justify-content: space-between;">
+                        <div>
+                            <label class="form-label" style="margin-bottom: 2px;">深色模式</label>
+                            <div class="settings-hint">切换后自动保存</div>
+                        </div>
+                        <button class="btn btn-secondary" id="configThemeBtn" onclick="toggleThemeFromConfig()">🌙 切换</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 备份设置 -->
+            <div class="settings-group">
+                <div class="settings-group-title">
+                    <span class="settings-icon" style="color: var(--success);">💾</span>
+                    <span>数据备份</span>
+                </div>
+                <div class="settings-card">
+
+                    <!-- 授权文件备份 -->
+                    <div class="backup-section">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 13px; color: var(--text-primary);">授权文件自动覆盖</div>
+                                <div class="settings-hint" style="margin-top: 2px;">选择一次备份文件，之后每次保存自动静默覆盖</div>
+                            </div>
+                            <span id="autoBackupStatus" class="backup-status">未设置</span>
+                        </div>
+                        <div class="tool-row" style="margin-top: 10px;">
+                            <button class="btn btn-primary btn-sm" id="btnSetupBackup" onclick="setupAutoBackup()" style="flex: 1;">📁 选择文件</button>
+                            <button class="btn btn-secondary btn-sm" onclick="disableAutoBackup()" style="flex: 1;">🚫 取消授权</button>
+                        </div>
+                        <div id="backupEnvHint" class="settings-hint" style="color: var(--warning); margin-top: 8px; display: none;">
+                            ⚠️ 当前为 file:// 本地文件打开，浏览器禁止文件授权。请通过 localhost 访问以启用此功能。
+                        </div>
+                    </div>
+
+                    <div style="height: 1px; background: var(--border-light); margin: 16px 0;"></div>
+
+                    <!-- 自动下载兜底 -->
+                    <div class="backup-section">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 13px; color: var(--text-primary);">自动下载备份（兜底）</div>
+                                <div class="settings-hint" style="margin-top: 2px;">当授权文件不可用时，自动下载 JSON 到下载文件夹</div>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="autoDownloadToggle" onchange="toggleAutoDownload()">
+                                <span class="switch-slider"></span>
+                            </label>
+                        </div>
+                        <div class="settings-hint" style="margin-top: 6px;">
+                            命名格式：<code>论文备份_YYYY-MM-DD_HH-MM-SS.json</code>，每 3 分钟最多触发一次
+                        </div>
+                    </div>
+
+                    <div style="height: 1px; background: var(--border-light); margin: 16px 0;"></div>
+
+                    <!-- 手动操作 -->
+                    <div class="backup-section">
+                        <div style="font-weight: 600; font-size: 13px; color: var(--text-primary); margin-bottom: 10px;">手动操作</div>
+                        <div class="tool-row">
+                            <button class="btn btn-secondary btn-sm" onclick="exportBackup()" style="flex: 1;">📤 导出备份</button>
+                            <button class="btn btn-secondary btn-sm" onclick="importBackup()" style="flex: 1;">📥 恢复数据</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="modal-foot">
+            <button class="btn btn-primary" onclick="saveConfig()">💾 保存设置</button>
+            <button class="btn btn-secondary" onclick="closeModal('configModal')">取消</button>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="recycleModal">
+    <div class="modal-box" style="max-width: 720px;">
+        <div class="modal-head">
+            <div style="font-size: 16px; font-weight: 600;">🗑 回收站</div>
+            <button class="btn btn-secondary btn-icon" onclick="closeModal('recycleModal')">✕</button>
+        </div>
+        <div class="modal-body">
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>原编号</th>
+                            <th>标题</th>
+                            <th>删除时间</th>
+                            <th style="text-align: right;">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody id="recycleBody"></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-foot">
+            <button class="btn btn-danger" onclick="emptyRecycle()">清空回收站</button>
+            <button class="btn btn-secondary" onclick="closeModal('recycleModal')">关闭</button>
+        </div>
+    </div>
+</div>
+
+<script>
+// ==================== 自动备份系统 ====================
+let autoBackupHandle = null;
+let autoBackupTimer = null;
+let lastFallbackTime = 0;
+
+function openBackupDB() {
+    return new Promise((resolve, reject) => {
+        const r = indexedDB.open('PaperBackupDB_v2', 1);
+        r.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains('handles')) db.createObjectStore('handles');
+            if (!db.objectStoreNames.contains('settings')) db.createObjectStore('settings');
+        };
+        r.onsuccess = (e) => resolve(e.target.result);
+        r.onerror = (e) => reject(e.target.error);
+    });
+}
+
+async function initAutoBackup() {
+    try {
+        const db = await openBackupDB();
+        const tx1 = db.transaction('handles', 'readonly');
+        const req1 = tx1.objectStore('handles').get('main');
+        req1.onsuccess = async () => {
+            if (req1.result) {
+                try {
+                    await req1.result.getFile();
+                    autoBackupHandle = req1.result;
+                    updateBackupStatusUI('active');
+                } catch (e) {
+                    autoBackupHandle = null;
+                    updateBackupStatusUI('error');
+                }
+            } else {
+                updateBackupStatusUI('inactive');
+            }
+        };
+        const tx2 = db.transaction('settings', 'readonly');
+        const req2 = tx2.objectStore('settings').get('autoDownload');
+        req2.onsuccess = () => {
+            const enabled = req2.result === true;
+            const toggle = document.getElementById('autoDownloadToggle');
+            if (toggle) toggle.checked = enabled;
+        };
+    } catch (e) {
+        updateBackupStatusUI('inactive');
+    }
+    if (window.location.protocol === 'file:') {
+        const hint = document.getElementById('backupEnvHint');
+        if (hint) hint.style.display = 'block';
+    }
+}
+
+function updateBackupStatusUI(state) {
+    const el = document.getElementById('autoBackupStatus');
+    const btn = document.getElementById('btnSetupBackup');
+    if (!el) return;
+    if (state === 'active') {
+        el.textContent = '已授权';
+        el.className = 'backup-status active';
+        if (btn) btn.textContent = '📁 重新授权';
+    } else if (state === 'error') {
+        el.textContent = '授权失效';
+        el.className = 'backup-status error';
+        if (btn) btn.textContent = '📁 重新授权';
+    } else {
+        el.textContent = '未设置';
+        el.className = 'backup-status';
+        if (btn) btn.textContent = '📁 选择文件';
+    }
+}
+
+async function setupAutoBackup() {
+    if (!window.showSaveFilePicker) {
+        showToast('当前浏览器或环境不支持文件授权，请使用"自动下载"兜底方案', 'error');
+        return;
+    }
+    try {
+        const handle = await window.showSaveFilePicker({
+            suggestedName: `论文备份_${new Date().toISOString().split('T')[0]}.json`,
+            types: [{ description: 'JSON备份', accept: { 'application/json': ['.json'] } }]
+        });
+        const db = await openBackupDB();
+        const tx = db.transaction('handles', 'readwrite');
+        tx.objectStore('handles').put(handle, 'main');
+        await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
+        autoBackupHandle = handle;
+        updateBackupStatusUI('active');
+        const ok = await performAutoBackup();
+        showToast(ok ? '✅ 已授权并写入备份文件' : '授权成功，但首次写入失败', ok ? 'success' : 'error');
+    } catch (e) {
+        if (e.name !== 'AbortError') showToast('设置失败: ' + e.message, 'error');
+    }
+}
+
+async function disableAutoBackup() {
+    autoBackupHandle = null;
+    try {
+        const db = await openBackupDB();
+        const tx = db.transaction('handles', 'readwrite');
+        tx.objectStore('handles').delete('main');
+        await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
+    } catch (e) {}
+    updateBackupStatusUI('inactive');
+    showToast('已取消文件授权备份', 'info');
+}
+
+async function toggleAutoDownload() {
+    const enabled = document.getElementById('autoDownloadToggle').checked;
+    try {
+        const db = await openBackupDB();
+        const tx = db.transaction('settings', 'readwrite');
+        tx.objectStore('settings').put(enabled, 'autoDownload');
+        await new Promise((res, rej) => { tx.oncomplete = res; tx.onerror = rej; });
+    } catch (e) {}
+    showToast(enabled ? '已开启自动下载备份' : '已关闭自动下载备份', 'info');
+}
+
+async function performAutoBackup() {
+    if (!autoBackupHandle) return false;
+    try {
+        let perm = await autoBackupHandle.queryPermission({ mode: 'readwrite' });
+        if (perm !== 'granted') {
+            perm = await autoBackupHandle.requestPermission({ mode: 'readwrite' });
+            if (perm !== 'granted') {
+                autoBackupHandle = null;
+                updateBackupStatusUI('error');
+                return false;
+            }
+        }
+        const writable = await autoBackupHandle.createWritable();
+        const payload = {
+            version: '2.0',
+            exportTime: new Date().toISOString(),
+            papers, logs, batches, config
+        };
+        await writable.write(JSON.stringify(payload, null, 2));
+        await writable.close();
+        return true;
+    } catch (e) {
+        console.error('静默备份失败', e);
+        autoBackupHandle = null;
+        updateBackupStatusUI('error');
+        return false;
+    }
+}
+
+function fallbackAutoDownload() {
+    const now = Date.now();
+    if (now - lastFallbackTime < 180000) return;
+    lastFallbackTime = now;
+    const payload = {
+        version: '2.0',
+        exportTime: new Date().toISOString(),
+        papers: papers.filter(p => !p.isDeleted),
+        logs, batches, config
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const d = new Date();
+    const pad = (n) => String(n).padStart(2, '0');
+    const ts = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}-${pad(d.getSeconds())}`;
+    a.href = url;
+    a.download = `论文备份_${ts}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('💾 已自动下载备份到下载文件夹', 'success');
+}
+
+function triggerAutoBackup() {
+    clearTimeout(autoBackupTimer);
+    autoBackupTimer = setTimeout(() => {
+        performAutoBackup().then(ok => {
+            if (!ok) {
+                const toggle = document.getElementById('autoDownloadToggle');
+                if (toggle && toggle.checked) {
+                    fallbackAutoDownload();
+                }
+            }
+        });
+    }, 600);
+}
+
+function toggleThemeFromConfig() {
+    toggleTheme();
+    const themeBtn = document.getElementById('configThemeBtn');
+    if (themeBtn) {
+        themeBtn.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️ 切换' : '🌙 切换';
+    }
+}
+
+function normalizeStatus(status) {
+    if (!status) return 'uploaded';
+    const s = String(status).trim();
+    const map = {
+        '已上传': 'uploaded',
+        'uploaded': 'uploaded',
+        '撤稿中': 'requested',
+        'requested': 'requested',
+        '已撤稿': 'withdrawn',
+        'withdrawn': 'withdrawn',
+        '已拒稿': 'rejected',
+        'rejected': 'rejected',
+        '申请更新': 'update_requested',
+        'update_requested': 'update_requested',
+        '已更新': 'updated',
+        'updated': 'updated',
+        '返修中': 'repair_requested',
+        'repair_requested': 'repair_requested',
+        '已返修': 'repaired',
+        'repaired': 'repaired',
+        '重复': 'duplicate',
+        'duplicate': 'duplicate'
+    };
+    return map[s] || s;
+}
+
+
+// ==================== 配置与状态 ====================
+const STATUS_MAP = {
+    'uploaded': { color: 'b-uploaded', text: '已上传', label: '已上传' },
+    'requested': { color: 'b-requested', text: '撤稿中', label: '撤稿中' },
+    'withdrawn': { color: 'b-withdrawn', text: '已撤稿', label: '已撤稿' },
+    'rejected': { color: 'b-rejected', text: '已拒稿', label: '已拒稿' },
+    'update_requested': { color: 'b-update-req', text: '申请更新', label: '申请更新' },
+    'updated': { color: 'b-updated', text: '已更新', label: '已更新' },
+    'repair_requested': { color: 'b-repair-req', text: '返修中', label: '返修中' },
+    'repaired': { color: 'b-repaired', text: '已返修', label: '已返修' },
+    'duplicate': { color: 'b-duplicate', text: '重复', label: '重复' }
+};
+
+// 新规则：更严格的单向流程
+const STATUS_FLOW = {
+    'uploaded': ['requested', 'update_requested', 'repair_requested', 'duplicate', 'rejected'],
+    'requested': ['withdrawn', 'uploaded'],
+    'update_requested': ['updated'],
+    'repair_requested': ['repaired'],
+    'withdrawn': ['uploaded'],
+    'updated': [],
+    'repaired': [],
+    'rejected': [],
+    'duplicate': ['rejected']
+};
+
+// 根据"当前状态→目标状态"返回动作名称
+function getFlowLabel(from, to) {
+    const actions = {
+        'uploaded,requested': '撤稿中',
+        'uploaded,update_requested': '申请更新',
+        'uploaded,repair_requested': '返修中',
+        'uploaded,duplicate': '重复',
+        'uploaded,rejected': '已拒稿',
+        'requested,withdrawn': '确认撤稿',
+        'requested,uploaded': '回滚到已上传',
+        'update_requested,updated': '确认更新',
+        'repair_requested,repaired': '确认返修',
+        'withdrawn,uploaded': '回滚到已上传',
+        'duplicate,rejected': '转为拒稿'
+    };
+    return actions[`${from},${to}`] || STATUS_MAP[to]?.label || to;
+}
+
+const FLOW_STYLES = {
+    'requested': { bg: '#fff7e6', color: '#d46b08', border: '#ffd591' },
+    'update_requested': { bg: '#fffbe6', color: '#ad6800', border: '#ffe58f' },
+    'repair_requested': { bg: '#fff0f6', color: '#c41d7f', border: '#ffadd2' },
+    'duplicate': { bg: '#f9f0ff', color: '#531dab', border: '#d3adf7' },
+    'rejected': { bg: '#fff2f0', color: '#cf1322', border: '#ffccc7' },
+    'withdrawn': { bg: '#f6ffed', color: '#389e0d', border: '#b7eb8f' },
+    'updated': { bg: '#f6ffed', color: '#389e0d', border: '#b7eb8f' },
+    'repaired': { bg: '#f6ffed', color: '#389e0d', border: '#b7eb8f' },
+    'uploaded': { bg: '#f5f5f5', color: '#595959', border: '#d9d9d9' }
+};
+
+const SUB_STAT_COLORS = {
+    uploaded: '#389e0d',
+    requested: '#d46b08',
+    update_requested: '#ad6800',
+    repair_requested: '#c41d7f',
+    withdrawn: '#389e0d',
+    updated: '#389e0d',
+    repaired: '#389e0d',
+    rejected: '#cf1322',
+    duplicate: '#531dab'
+};
+
+let config = {
+    salesRules: { "51":"周老师","52":"康老师","54":"许老师","58":"欧阳老师","1":"陈老师","2":"陈老师","6":"陈老师","3":"游老师","4":"肖老师" },
+    defaultTeacher: "方老师",
+    pageSize: 15,
+    theme: 'light'
+};
+
+let papers = [];
+let logs = [];
+let batches = [];
+let currentFilter = { status: 'all', search: '' };
+let currentPage = 1;
+let editingId = null;
+let reviewingId = null;
+let importQueue = null;
+let searchTimer = null;
+
+const STORAGE_KEY = 'papers_data_v2';
+
+// ==================== 数据持久化 ====================
+function saveData() {
+    const data = { papers, logs, batches, config, savedAt: new Date().toISOString() };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    triggerAutoBackup();
+}
+
+function loadData() {
+    try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+            const data = JSON.parse(raw);
+            if (data.papers) papers = data.papers;
+            if (data.logs) logs = data.logs;
+            if (data.batches) batches = data.batches;
+            if (data.config) config = { ...config, ...data.config };
+            return true;
+        }
+    } catch (e) { console.error('加载数据失败', e); }
+    return false;
+}
+
+// ==================== 初始化 ====================
+function init() {
+    if (!loadData()) {
+        papers = [
+            { id: '1', originalId: '51-001', title: '基于深度学习的图像分类方法研究', submissionId: 'CVPR-2026-12345', meetingName: 'CVPR 2026', salesPerson: '周老师', status: 'uploaded', uploadDate: '2026-06-01', requestDate: '', withdrawDate: '', acceptDate: '', remark: '初稿已上传，等待审稿', isDeleted: 0, wasDuplicate: false },
+            { id: '2', originalId: '52-102', title: '自然语言处理中的注意力机制优化', submissionId: 'ACL-2026-67890', meetingName: 'ACL 2026', salesPerson: '康老师', status: 'uploaded', uploadDate: '2026-05-20', requestDate: '', withdrawDate: '', acceptDate: '', remark: '已上传', isDeleted: 0, wasDuplicate: false },
+            { id: '3', originalId: '54-305', title: '强化学习在自动驾驶中的应用综述', submissionId: 'ICRA-2026-54321', meetingName: 'ICRA 2026', salesPerson: '许老师', status: 'update_requested', uploadDate: '2026-05-15', requestDate: '2026-06-12', withdrawDate: '', acceptDate: '', remark: '需要补充实验数据', isDeleted: 0, wasDuplicate: false },
+            { id: '4', originalId: '58-008', title: '图神经网络在社交网络分析中的新进展', submissionId: 'KDD-2026-11111', meetingName: 'KDD 2026', salesPerson: '欧阳老师', status: 'withdrawn', uploadDate: '2026-04-10', requestDate: '2026-05-01', withdrawDate: '2026-06-08', acceptDate: '', remark: '已确认撤稿', isDeleted: 0, wasDuplicate: false },
+            { id: '5', originalId: '1-009', title: '联邦学习隐私保护机制研究', submissionId: 'NeurIPS-2026-22222', meetingName: 'NeurIPS 2026', salesPerson: '陈老师', status: 'rejected', uploadDate: '2026-03-20', requestDate: '', withdrawDate: '2026-04-15', acceptDate: '', remark: '审稿意见：创新性不足', isDeleted: 0, wasDuplicate: true },
+            { id: '6', originalId: '3-110', title: '多模态融合的情感分析模型', submissionId: 'EMNLP-2026-33333', meetingName: 'EMNLP 2026', salesPerson: '游老师', status: 'repair_requested', uploadDate: '2026-05-25', requestDate: '2026-06-11', withdrawDate: '', acceptDate: '', remark: '大修：需补充对比实验', isDeleted: 0, wasDuplicate: false },
+            { id: '7', originalId: '4-205', title: '知识图谱嵌入的稀疏性优化算法', submissionId: 'WWW-2026-44444', meetingName: 'WWW 2026', salesPerson: '肖老师', status: 'updated', uploadDate: '2026-04-01', requestDate: '2026-05-10', withdrawDate: '2026-06-09', acceptDate: '', remark: '已按要求更新', isDeleted: 0, wasDuplicate: false },
+            { id: '8', originalId: '6-330', title: 'Transformer架构的轻量化改进方案', submissionId: 'ICML-2026-55555', meetingName: 'ICML 2026', salesPerson: '陈老师', status: 'repaired', uploadDate: '2026-04-20', requestDate: '2026-05-15', withdrawDate: '2026-06-13', acceptDate: '', remark: '返修完成，已重新提交', isDeleted: 0, wasDuplicate: false },
+            { id: '9', originalId: '51-002', title: '生成对抗网络在医学影像中的应用', submissionId: 'MICCAI-2026-66666', meetingName: 'MICCAI 2026', salesPerson: '周老师', status: 'duplicate', uploadDate: '2026-06-05', requestDate: '', withdrawDate: '', acceptDate: '', remark: '与51-001重复', isDeleted: 0, wasDuplicate: true },
+            { id: '10', originalId: '1001', title: '无连字符编号测试论文', submissionId: 'TEST-2026-77777', meetingName: '测试会议', salesPerson: '', status: 'uploaded', uploadDate: '2026-06-14', requestDate: '', withdrawDate: '', acceptDate: '', remark: '测试无连字符默认分配', isDeleted: 0, wasDuplicate: false }
+        ];
+        saveData();
+    }
+    // 清理已移除的 accepted 状态遗留数据
+    papers.forEach(p => {
+        if (p.status === 'accepted') {
+            p.status = 'uploaded';
+            p.acceptDate = '';
+        }
+    });
+    renderStats();
+    renderTable();
+    initAutoBackup();
+}
+
+// ==================== 统计面板 ====================
+function renderStats() {
+    const active = papers.filter(p => !p.isDeleted);
+    
+    // 统一状态
+    const normalized = active.map(p => normalizeStatus(p.status));
+
+    // 各状态计数
+    const counts = {
+        total: active.length,
+        uploaded: 0, accepted: 0, requested: 0, withdrawn: 0,
+        rejected: 0, update_requested: 0, updated: 0,
+        repair_requested: 0, repaired: 0, duplicate: 0
+    };
+    normalized.forEach(s => { if (counts[s] !== undefined) counts[s]++; });
+    // accepted 已移除，计数时自动忽略
+
+    // 按你的逻辑计算主卡片
+    const reviewing = counts.uploaded + counts.requested
+                    + counts.update_requested + counts.updated
+                    + counts.repair_requested + counts.repaired + counts.duplicate;
+    const processing = counts.requested + counts.update_requested + counts.repair_requested;
+    const finished = counts.withdrawn + counts.rejected;
+
+    // 主卡片定义（8个，对应网络版布局）
+    const mainCards = [
+        { key: 'all',      label: '卷宗总数', value: counts.total,      color: '#262626' },
+        { key: 'reviewing',label: '已上传',   value: reviewing,         color: '#1677ff' },
+        { key: 'processing',label:'处理中',   value: processing,        color: '#faad14' },
+        { key: 'withdrawn',label: '已撤稿',   value: counts.withdrawn,  color: '#52c41a' },
+        { key: 'rejected', label: '已拒稿',   value: counts.rejected,   color: '#f5222d' },
+        { key: 'updated',  label: '已更新',   value: counts.updated,    color: '#13c2c2' },
+        { key: 'repaired', label: '已返修',   value: counts.repaired,   color: '#eb2f96' },
+    ];
+
+    const mainContainer = document.getElementById('statsMain');
+    // 改成 8 列网格，适配你截图里的密集卡片布局
+    mainContainer.style.gridTemplateColumns = 'repeat(7, 1fr)';
+    mainContainer.innerHTML = mainCards.map(c => {
+        const isActive = currentFilter.status === c.key;
+        const activeStyle = isActive ? `border-color: ${c.color}; box-shadow: 0 0 0 1px ${c.color};` : '';
+        return `
+            <div class="stat-card ${isActive ? 'active' : ''}" 
+                 style="${activeStyle}" 
+                 onclick="filterByStatus('${c.key}')">
+                <div class="stat-number" style="color: ${isActive ? c.color : 'var(--text-primary)'};">${c.value}</div>
+                <div class="stat-label">${c.label}</div>
+            </div>
+        `;
+    }).join('');
+
+    // 子标签保留，作为更细粒度的筛选
+    const subContainer = document.getElementById('subStats');
+    const subItems = [
+        { key: 'requested',       label: '撤稿中',   count: counts.requested },
+        { key: 'update_requested',label: '申请更新', count: counts.update_requested },
+        { key: 'repair_requested',label: '返修中',   count: counts.repair_requested },
+        { key: 'duplicate',       label: '重复', count: counts.duplicate }
+    ];
+
+    subContainer.innerHTML = subItems.map(s => {
+        const color = SUB_STAT_COLORS[s.key];
+        const isActive = currentFilter.status === s.key;
+        const style = isActive
+            ? `background: ${color}; color: white; border-color: ${color};`
+            : `background: transparent; color: ${color}; border-color: ${color};`;
+        return `
+            <div class="sub-pill ${isActive ? 'active' : ''}" style="${style}" onclick="filterByStatus('${s.key}')">
+                ${s.label} ${s.count}
+            </div>
+        `;
+    }).join('');
+}
+
+// ==================== 表格渲染 ====================
+function getFilteredData() {
+    let data = papers.filter(p => !p.isDeleted);
+    if (currentFilter.status !== 'all') {
+        const s = currentFilter.status;
+        data = data.filter(p => {
+            const ns = normalizeStatus(p.status);
+            // 核心逻辑：已上传 = 非撤稿且非拒稿
+            if (s === 'reviewing') return !['withdrawn','rejected'].includes(ns);
+            // 处理中 = 撤稿中 + 申请更新 + 返修中
+            if (s === 'processing') return ['requested','update_requested','repair_requested'].includes(ns);
+            // 已完结 = 已撤稿 + 已拒稿
+            if (s === 'finished') return ['withdrawn','rejected'].includes(ns);
+            // 其余按精确状态匹配
+            return ns === s;
+        });
+    }
+    if (currentFilter.search) {
+        const kw = currentFilter.search.toLowerCase();
+        data = data.filter(p =>
+            (p.originalId||'').toLowerCase().includes(kw) ||
+            (p.title||'').toLowerCase().includes(kw) ||
+            (p.submissionId||'').toLowerCase().includes(kw) ||
+            (p.meetingName||'').toLowerCase().includes(kw) ||
+            (p.salesPerson||'').toLowerCase().includes(kw) ||
+            (p.remark||'').toLowerCase().includes(kw)
+        );
+    }
+    return data;
+}
+
+function renderTable() {
+    const allData = getFilteredData();
+    const total = allData.length;
+    const totalPages = Math.ceil(total / config.pageSize) || 1;
+    currentPage = Math.min(currentPage, totalPages);
+    const start = (currentPage - 1) * config.pageSize;
+    const pageData = allData.slice(start, start + config.pageSize);
+
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = pageData.map(item => {
+            const displayStatus = item.status === 'duplicate' ? 'uploaded' : item.status;
+            const st = STATUS_MAP[displayStatus] || STATUS_MAP['uploaded'];
+            const latest = item.withdrawDate ? `✅ ${item.withdrawDate}` :
+                          item.requestDate ? `📝 ${item.requestDate}` :
+                          `📤 ${item.uploadDate || '-'}`;
+        
+            const dupMark = (item.wasDuplicate || item.status === 'duplicate') ? `<span class="dup-mark">重复</span>` : '';
+        
+            return `
+                <tr>
+                    <td><input type="checkbox" class="row-chk" value="${item.id}" onchange="updateBatchBar()"></td>
+                    <td class="copy-cell" onclick="copyText(this, '${escapeHtml(item.originalId)}')">
+                        ${escapeHtml(item.originalId)}
+                        <span class="copy-hint">点击复制</span>
+                    </td>
+                    <td class="copy-cell" onclick="copyText(this, '${escapeHtml(item.submissionId)}')">
+                        ${escapeHtml(item.submissionId || '-')}
+                        <span class="copy-hint">点击复制</span>
+                    </td>
+                    <td class="copy-cell" onclick="copyText(this, '${escapeHtml(item.meetingName)}')" style="max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        ${escapeHtml(item.meetingName || '-')}
+                        <span class="copy-hint">点击复制</span>
+                    </td>
+                    <td class="copy-cell" onclick="copyText(this, '${escapeHtml(item.title)}')" style="max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
+                        ${dupMark}${escapeHtml(item.title || '-')}
+                        <span class="copy-hint">点击复制</span>
+                    </td>
+                    <td style="text-align: center;"><span class="badge ${st.color}">${st.text}</span></td>
+                    <td style="text-align: center;">${escapeHtml(item.salesPerson || '')}</td>
+                    <td style="text-align: center; font-size: 11px; color: var(--text-tertiary); white-space: nowrap;">${latest}</td>
+                    <td style="text-align: center; max-width: 110px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; color: var(--text-tertiary);" title="${escapeHtml(item.remark || '')}">
+                        ${escapeHtml(item.remark || '')}
+                    </td>
+                    <td style="text-align: center;">
+                        <div style="display: inline-flex; gap: 6px; align-items: center;">
+                            <button class="btn btn-primary btn-sm" onclick="openReview('${item.id}')">编审</button>
+                            <div class="dropdown">
+                                <button class="btn btn-secondary btn-sm" onclick="toggleDropdown(this)">⋯</button>
+                                <div class="dropdown-menu">
+                                    ${renderFlowMenu(item)}
+                                    <div class="dropdown-item" onclick="openEdit('${item.id}')">🖊️ 编辑</div>
+                                    <div class="dropdown-item danger" onclick="softDelete('${item.id}')">🗑️ 删除</div>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        }).join('');
+        document.getElementById('pageInfo').textContent = `第 ${currentPage} / ${totalPages} 页，共 ${total} 条`;
+        document.getElementById('btnPrev').disabled = currentPage <= 1;
+        document.getElementById('btnNext').disabled = currentPage >= totalPages;
+        document.getElementById('chkAll').checked = false;
+}
+
+function renderFlowMenu(item) {
+    const flows = STATUS_FLOW[item.status] || [];
+    return flows.map(f => {
+        const label = getFlowLabel(item.status, f);
+        return `<div class="dropdown-item" onclick="changeStatus('${item.id}', '${f}')">${label}</div>`;
+    }).join('');
+}
+
+
+// ==================== 交互功能 ====================
+function escapeHtml(str) {
+    if (!str) return '';
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
+function copyText(el, text) {
+    navigator.clipboard.writeText(text);
+    el.classList.add('copied');
+    showToast('已复制', 'success');
+    setTimeout(() => el.classList.remove('copied'), 1500);
+}
+
+function showToast(msg, type='info') {
+    const t = document.getElementById('toast');
+    t.className = `toast toast-${type}`;
+    t.textContent = msg;
+    t.classList.add('active');
+    setTimeout(() => t.classList.remove('active'), 2500);
+}
+
+function toggleDropdown(btn) {
+    const menu = btn.nextElementSibling;
+    const isOpen = menu.classList.contains('active');
+    
+    document.querySelectorAll('.dropdown-menu').forEach(m => {
+        m.classList.remove('active');
+        m.style.display = 'none';
+        m.style.top = '';
+        m.style.right = '';
+    });
+    
+    if (!isOpen) {
+        const rect = btn.getBoundingClientRect();
+        menu.style.top = (rect.bottom + 6) + 'px';
+        menu.style.right = (window.innerWidth - rect.right) + 'px';
+        menu.style.display = 'block';
+        menu.classList.add('active');
+    }
+}
+
+document.addEventListener('click', e => {
+    if (!e.target.closest('.dropdown')) {
+        document.querySelectorAll('.dropdown-menu').forEach(m => {
+            m.classList.remove('active');
+            m.style.display = 'none';
+        });
+    }
+});
+
+function filterByStatus(status) {
+    if (status === 'total') status = 'all';
+    currentFilter.status = status;
+    currentPage = 1;
+    document.querySelectorAll('.filter-pill').forEach(t => t.classList.toggle('active', t.dataset.status === status));
+    renderStats();
+    renderTable();
+}
+
+function debounceSearch() {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => {
+        currentFilter.search = document.getElementById('searchInput').value.trim();
+        currentPage = 1;
+        renderTable();
+    }, 300);
+}
+
+function changePage(delta) {
+    currentPage += delta;
+    renderTable();
+}
+
+function checkAll(cb) {
+    document.querySelectorAll('.row-chk').forEach(c => c.checked = cb.checked);
+    updateBatchBar();
+}
+
+
+// ==================== 批量操作 ====================
+function getSelectedIds() {
+    return Array.from(document.querySelectorAll('.row-chk:checked')).map(c => c.value);
+}
+
+function updateBatchBar() {
+    const ids = getSelectedIds();
+    const bar = document.getElementById('batchBar');
+    const count = document.getElementById('batchCount');
+    if (!bar) return;
+
+    if (ids.length > 0) {
+        bar.style.display = 'inline-flex';
+        count.textContent = ids.length;
+    } else {
+        bar.style.display = 'none';
+    }
+}
+
+function clearSelection() {
+    document.querySelectorAll('.row-chk').forEach(c => c.checked = false);
+    document.getElementById('chkAll').checked = false;
+    updateBatchBar();
+}
+
+function batchDelete() {
+    const ids = getSelectedIds();
+    if (!ids.length) return;
+    const items = ids.map(id => papers.find(p => p.id === id)).filter(Boolean);
+    const titles = items.map(p => p.originalId).join(', ');
+    if (!confirm(`确定将 ${ids.length} 条论文移至回收站？
+
+${titles.substring(0, 100)}${titles.length > 100 ? '...' : ''}`)) return;
+
+    let cnt = 0;
+    items.forEach(p => {
+        p.isDeleted = 1;
+        p.deletedAt = new Date().toISOString();
+        addLog(p.id, 'BATCH_DELETE', `批量删除: ${p.originalId}`);
+        cnt++;
+    });
+
+    saveData();
+    clearSelection();
+    renderStats();
+    renderTable();
+    showToast(`已批量删除 ${cnt} 条论文`, 'success');
+}
+
+function batchChangeStatus(targetStatus) {
+    // 关闭下拉菜单
+    document.querySelectorAll('.dropdown-menu').forEach(m => {
+        m.classList.remove('active');
+        m.style.display = 'none';
+    });
+
+    const ids = getSelectedIds();
+    if (!ids.length) return;
+    if (!targetStatus || !STATUS_MAP[targetStatus]) {
+        showToast('无效的状态值', 'error');
+        return;
+    }
+
+    const items = ids.map(id => papers.find(p => p.id === id)).filter(Boolean);
+    const label = STATUS_MAP[targetStatus].label;
+    if (!confirm(`确定将 ${items.length} 条论文批量改为【${label}】？`)) return;
+
+    let cnt = 0;
+    items.forEach(p => {
+        const oldStatus = p.status;
+        p.status = targetStatus;
+
+        if (['requested','update_requested','repair_requested'].includes(targetStatus) && !p.requestDate) {
+            p.requestDate = new Date().toISOString().split('T')[0];
+        }
+        if (['withdrawn','updated','repaired'].includes(targetStatus) && !p.withdrawDate) {
+            p.withdrawDate = new Date().toISOString().split('T')[0];
+        }
+        if (targetStatus === 'duplicate') {
+            p.wasDuplicate = true;
+        }
+
+        addLog(p.id, 'BATCH_STATUS', `${STATUS_MAP[oldStatus].label} → ${label}`);
+        cnt++;
+    });
+
+    saveData();
+    clearSelection();
+    renderStats();
+    renderTable();
+    showToast(`已批量修改 ${cnt} 条论文为【${label}】`, 'success');
+}
+
+function toggleBatchStatusMenu(btn) {
+    const menu = document.getElementById('batchStatusMenu');
+    const isOpen = menu.classList.contains('active');
+
+    document.querySelectorAll('.dropdown-menu').forEach(m => {
+        m.classList.remove('active');
+        m.style.display = 'none';
+        m.style.top = '';
+        m.style.right = '';
+    });
+
+    if (!isOpen) {
+        const rect = btn.getBoundingClientRect();
+        menu.style.top = (rect.bottom + 6) + 'px';
+        menu.style.right = (window.innerWidth - rect.right) + 'px';
+        menu.style.display = 'block';
+        menu.classList.add('active');
+    }
+}
+
+// ==================== 编审弹窗 ====================
+function openReview(id) {
+    reviewingId = id;
+    const item = papers.find(p => p.id === id);
+    if (!item) return;
+    const displayStatus = item.status === 'duplicate' ? 'uploaded' : item.status;
+    const st = STATUS_MAP[displayStatus];
+
+    document.getElementById('reviewOriginalId').textContent = item.originalId;
+    document.getElementById('reviewBadge').innerHTML = `<span class="badge ${st.color}">${st.text}</span>`;
+    
+    const dupMark = (item.wasDuplicate || item.status === 'duplicate') ? `<span class="dup-mark">重复</span>` : '';
+    document.getElementById('reviewTitle').innerHTML = `${dupMark}${escapeHtml(item.title || '-')}`;
+    
+    document.getElementById('reviewSubmissionId').textContent = item.submissionId || '-';
+    document.getElementById('reviewMeeting').textContent = item.meetingName || '-';
+    document.getElementById('reviewSales').textContent = item.salesPerson || '-';
+    document.getElementById('reviewId').textContent = item.id;
+    document.getElementById('reviewRemark').textContent = item.remark || '无备注';
+
+    let timeline = '';
+    if (item.uploadDate) timeline += `<div class="timeline-row"><div class="timeline-dot"></div><div class="timeline-text"><strong>上传</strong>${item.uploadDate}</div></div>`;
+    if (item.requestDate) timeline += `<div class="timeline-row"><div class="timeline-dot"></div><div class="timeline-text"><strong>申请</strong>${item.requestDate}</div></div>`;
+    if (item.withdrawDate) timeline += `<div class="timeline-row active"><div class="timeline-dot"></div><div class="timeline-text"><strong>完成</strong>${item.withdrawDate}</div></div>`;
+    document.getElementById('reviewTimeline').innerHTML = timeline || '<span style="color: var(--text-tertiary); font-size: 12px;">暂无时间线记录</span>';
+
+    const flows = STATUS_FLOW[item.status] || [];
+    document.getElementById('reviewFlowPills').innerHTML = flows.map(f => {
+        const style = FLOW_STYLES[f];
+        const label = getFlowLabel(item.status, f);
+        return `<div class="flow-pill" style="background: ${style.bg}; color: ${style.color}; border: 1px solid ${style.border};" onclick="changeStatus('${id}', '${f}'); closeModal('reviewModal');">${label}</div>`;
+    }).join('');
+
+    const itemLogs = logs.filter(l => l.itemId === id).sort((a,b) => b.time.localeCompare(a.time));
+    document.getElementById('reviewLogs').innerHTML = itemLogs.length ? itemLogs.map(l => `
+        <tr><td style="padding:4px;">${l.time}</td><td style="padding:4px;">${l.action}</td><td style="padding:4px;">${l.detail || '-'}</td></tr>
+    `).join('') : '<tr><td colspan="3" style="color:var(--text-tertiary);padding:4px;">暂无日志</td></tr>';
+
+    const recentLogs = itemLogs.slice(0, 3);
+    document.getElementById('reviewActivity').innerHTML = recentLogs.length ? recentLogs.map(l => `
+        <div class="activity-item">
+            <div class="activity-time">${l.time}</div>
+            <div>${l.action} · ${l.detail || ''}</div>
+        </div>
+    `).join('') : '<div style="color:var(--text-tertiary);font-size:12px;">暂无动态</div>';
+
+    document.getElementById('reviewModal').classList.add('active');
+}
+
+function editFromReview() {
+    closeModal('reviewModal');
+    setTimeout(() => openEdit(reviewingId), 200);
+}
+
+function copyFromReview() {
+    const item = papers.find(p => p.id === reviewingId);
+    if (item) {
+        navigator.clipboard.writeText(item.originalId);
+        showToast('原编号已复制', 'success');
+    }
+}
+
+function deleteFromReview() {
+    softDelete(reviewingId);
+    closeModal('reviewModal');
+}
+
+// ==================== 新增/编辑 ====================
+function openEditModal() {
+    editingId = null;
+    document.getElementById('editTitle').textContent = '新增稿件';
+    clearForm();
+    document.getElementById('f_uploadDate').value = new Date().toISOString().split('T')[0];
+    document.getElementById('editModal').classList.add('active');
+}
+
+function openEdit(id) {
+    const item = papers.find(p => p.id === id);
+    if (!item) return;
+    editingId = id;
+    document.getElementById('editTitle').textContent = '编辑稿件';
+    document.getElementById('f_id').value = item.id;
+    document.getElementById('f_originalId').value = item.originalId;
+    document.getElementById('f_submissionId').value = item.submissionId || '';
+    document.getElementById('f_title').value = item.title || '';
+    document.getElementById('f_meetingName').value = item.meetingName || '';
+    document.getElementById('f_salesPerson').value = item.salesPerson || '';
+    document.getElementById('f_status').value = item.status;
+    document.getElementById('f_uploadDate').value = item.uploadDate || '';
+    document.getElementById('f_requestDate').value = item.requestDate || '';
+    document.getElementById('f_withdrawDate').value = item.withdrawDate || '';
+    document.getElementById('f_remark').value = item.remark || '';
+    document.getElementById('f_wasDuplicate').checked = item.wasDuplicate || false;
+    document.getElementById('editModal').classList.add('active');
+}
+
+function clearForm() {
+    ['f_id','f_originalId','f_submissionId','f_title','f_meetingName','f_salesPerson','f_uploadDate','f_requestDate','f_withdrawDate','f_remark'].forEach(id => {
+        document.getElementById(id).value = '';
+    });
+    document.getElementById('f_status').value = 'uploaded';
+    document.getElementById('f_wasDuplicate').checked = false;
+}
+
+function submitForm() {
+    const originalId = document.getElementById('f_originalId').value.trim();
+    if (!originalId) { showToast('原编号不能为空', 'error'); return; }
+
+    const item = {
+        id: editingId || String(Date.now()),
+        originalId: originalId,
+        submissionId: document.getElementById('f_submissionId').value.trim(),
+        title: document.getElementById('f_title').value.trim(),
+        meetingName: document.getElementById('f_meetingName').value.trim(),
+        salesPerson: document.getElementById('f_salesPerson').value.trim(),
+        status: document.getElementById('f_status').value,
+        uploadDate: document.getElementById('f_uploadDate').value,
+        requestDate: document.getElementById('f_requestDate').value,
+        withdrawDate: document.getElementById('f_withdrawDate').value,
+        remark: document.getElementById('f_remark').value.trim(),
+        isDeleted: 0,
+        wasDuplicate: document.getElementById('f_wasDuplicate').checked || document.getElementById('f_status').value === 'duplicate'
+    };
+
+    if (!item.salesPerson) item.salesPerson = matchSalesPerson(item.originalId);
+
+    if (editingId) {
+        const idx = papers.findIndex(p => p.id === editingId);
+        if (idx >= 0) {
+            const old = papers[idx];
+            papers[idx] = item;
+            addLog(item.id, 'UPDATE', `编辑: ${old.originalId}`);
+        }
+    } else {
+        papers.push(item);
+        addLog(item.id, 'INSERT', `新增: ${item.originalId}`);
+    }
+
+    saveData();
+    closeModal('editModal');
+    renderStats();
+    renderTable();
+    showToast(editingId ? '保存成功' : '新增成功', 'success');
+}
+
+function matchSalesPerson(origId) {
+    // 没有 "-" 的默认分配方老师
+    if (!origId.includes('-')) return config.defaultTeacher || '方老师';
+
+    // 提取 "-" 后面的数字部分
+    const afterDash = origId.split('-')[1];
+    if (!afterDash) return '未知';
+
+    // 提取开头的数字（忽略后面的字母）
+    const numMatch = afterDash.match(/^(\d+)/);
+    if (!numMatch) return '未知';
+
+    const numStr = numMatch[1];
+    const rules = config.salesRules;
+
+    // 先匹配2位数字
+    if (numStr.length >= 2) {
+        const twoDigit = numStr.substring(0, 2);
+        if (rules[twoDigit]) return rules[twoDigit];
+    }
+
+    // 再匹配1位数字
+    const oneDigit = numStr.substring(0, 1);
+    if (rules[oneDigit]) return rules[oneDigit];
+
+    // 都没匹配到
+    return '未知';
+}
+
+function autoMatchSales() {
+    let cnt = 0;
+    papers.forEach(p => {
+        if (!p.isDeleted && !p.salesPerson) {
+            const sp = matchSalesPerson(p.originalId);
+            if (sp) { p.salesPerson = sp; cnt++; }
+        }
+    });
+    saveData();
+    renderTable();
+    showToast(`已匹配 ${cnt} 条记录`, 'success');
+}
+
+// ==================== 状态变更与删除 ====================
+function changeStatus(id, newStatus) {
+    const item = papers.find(p => p.id === id);
+    if (!item) return;
+    const oldStatus = item.status;
+    item.status = newStatus;
+
+    if (['requested','update_requested','repair_requested'].includes(newStatus) && !item.requestDate) {
+        item.requestDate = new Date().toISOString().split('T')[0];
+    }
+    if (['withdrawn','updated','repaired'].includes(newStatus) && !item.withdrawDate) {
+        item.withdrawDate = new Date().toISOString().split('T')[0];
+    }
+    if (newStatus === 'duplicate') {
+        item.wasDuplicate = true;
+    }
+
+    addLog(id, 'STATUS', `${STATUS_MAP[oldStatus].label} → ${STATUS_MAP[newStatus].label}`);
+    saveData();
+    renderStats();
+    renderTable();
+    showToast('状态已更新', 'success');
+}
+
+function softDelete(id) {
+    if (!confirm('确定删除至回收站？')) return;
+    const item = papers.find(p => p.id === id);
+    if (item) {
+        item.isDeleted = 1;
+        item.deletedAt = new Date().toISOString();
+        addLog(id, 'DELETE', `删除: ${item.originalId}`);
+    }
+    saveData();
+    renderStats();
+    renderTable();
+    showToast('已移至回收站', 'info');
+}
+
+function restorePaper(id) {
+    const item = papers.find(p => p.id === id);
+    if (item) {
+        item.isDeleted = 0;
+        delete item.deletedAt;
+        addLog(id, 'RESTORE', `还原: ${item.originalId}`);
+    }
+    saveData();
+    showRecycleBin();
+    renderStats();
+    renderTable();
+}
+
+function emptyRecycle() {
+    if (!confirm('清空回收站？此操作不可恢复。')) return;
+    papers = papers.filter(p => !p.isDeleted);
+    saveData();
+    closeModal('recycleModal');
+    renderStats();
+    showToast('回收站已清空', 'success');
+}
+
+// ==================== 日志系统 ====================
+function addLog(itemId, action, detail) {
+    logs.push({
+        itemId,
+        action,
+        detail,
+        time: new Date().toISOString().replace('T', ' ').substring(0, 16)
+    });
+}
+
+// ==================== Excel 导入导出 ====================
+const STATUS_IMPORT_MAP = {
+    '已上传': 'uploaded',
+    '撤稿中': 'requested',
+    '已撤稿': 'withdrawn',
+    '已拒稿': 'rejected',
+    '申请更新': 'update_requested',
+    '已更新': 'updated',
+    '返修中': 'repair_requested',
+    '已返修': 'repaired',
+    '重复': 'duplicate'
+};
+
+function handleExcelImport(input) {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+        try {
+            const wb = XLSX.read(e.target.result, {type: 'array'});
+            const ws = wb.Sheets[wb.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(ws);
+            if (!rows.length) { showToast('文件为空', 'error'); return; }
+
+            const headers = Object.keys(rows[0]);
+            const hasSales = headers.some(h => h.includes('销售') || h.toLowerCase().includes('sales'));
+            if (hasSales) {
+                showToast('为保护销售分配信息，禁止导入含销售老师列的表格', 'error');
+                return;
+            }
+
+            const parsed = rows.map(r => {
+                const rawStatus = String(r['状态'] || r['status'] || 'uploaded').trim();
+                return {
+                    originalId: String(r['原编号'] || r['originalId'] || '').trim(),
+                    title: String(r['论文标题'] || r['title'] || '').trim(),
+                    submissionId: String(r['投稿ID'] || r['submissionId'] || '').trim(),
+                    meetingName: String(r['会议名称'] || r['meetingName'] || '').trim(),
+                    status: STATUS_IMPORT_MAP[rawStatus] || rawStatus,
+                    uploadDate: String(r['上传日期'] || r['uploadDate'] || '').trim(),
+                    requestDate: String(r['申请日期'] || r['requestDate'] || '').trim(),
+                    withdrawDate: String(r['完成日期'] || r['withdrawDate'] || r['completeDate'] || '').trim(),
+                            remark: String(r['备注'] || r['remark'] || '').trim()
+                };
+            }).filter(r => r.originalId);
+
+            const add = [], update = [], dup = [], fail = [];
+            parsed.forEach(r => {
+                if (!r.originalId) { fail.push(r); return; }
+                const exist = papers.find(p => p.originalId === r.originalId && !p.isDeleted);
+                if (exist) {
+                    const hasDiff = ['title','submissionId','meetingName','status','uploadDate','requestDate','withdrawDate','acceptDate','remark'].some(f => (exist[f]||'') !== (r[f]||''));
+                    if (hasDiff) update.push({...r, id: exist.id});
+                    else dup.push(r);
+                } else {
+                    add.push(r);
+                }
+            });
+
+            importQueue = { add, update, dup, fail };
+            showImportPreview(add, update, dup, fail);
+        } catch(ex) {
+            showToast('解析失败: ' + ex.message, 'error');
+        }
+    };
+    reader.readAsArrayBuffer(file);
+    input.value = '';
+}
+
+function showImportPreview(add, update, dup, fail) {
+    const body = document.getElementById('importPreviewBody');
+    body.innerHTML = `
+        <div class="preview-block">
+            <div class="preview-head" style="color: var(--success);">🟢 新增 (${add.length})</div>
+            <div class="preview-list">
+                ${add.length ? add.map(i => `<div class="preview-row"><span>${escapeHtml(i.originalId)}</span><span style="color:var(--text-tertiary);">${escapeHtml(i.title.substring(0,30))}</span></div>`).join('') : '<div class="preview-row" style="color:var(--text-tertiary);">无</div>'}
+            </div>
+        </div>
+        <div class="preview-block">
+            <div class="preview-head" style="color: var(--accent);">🔵 更新 (${update.length})</div>
+            <div class="preview-list">
+                ${update.length ? update.map(i => `<div class="preview-row"><span>${escapeHtml(i.originalId)}</span><span style="color:var(--text-tertiary);">字段有变更</span></div>`).join('') : '<div class="preview-row" style="color:var(--text-tertiary);">无</div>'}
+            </div>
+        </div>
+        <div class="preview-block">
+            <div class="preview-head" style="color: var(--purple);">🟣 重复 (${dup.length})</div>
+            <div class="preview-list">
+                ${dup.length ? dup.map(i => `<div class="preview-row"><span>${escapeHtml(i.originalId)}</span></div>`).join('') : '<div class="preview-row" style="color:var(--text-tertiary);">无</div>'}
+            </div>
+        </div>
+        <div class="preview-block">
+            <div class="preview-head" style="color: var(--error);">🔴 失败 (${fail.length})</div>
+            <div class="preview-list">
+                ${fail.length ? fail.map(i => `<div class="preview-row"><span>${escapeHtml(i.originalId || '(空)')}</span><span style="color:var(--error);">缺少原编号</span></div>`).join('') : '<div class="preview-row" style="color:var(--text-tertiary);">无</div>'}
+            </div>
+        </div>
+    `;
+    document.getElementById('importModal').classList.add('active');
+}
+
+function confirmImport() {
+    if (!importQueue) return;
+    const { add, update, dup, fail } = importQueue;
+    let cnt = 0;
+
+    add.forEach(r => {
+        papers.push({
+            id: String(Date.now() + cnt++),
+            ...r,
+            salesPerson: matchSalesPerson(r.originalId),
+            isDeleted: 0,
+            wasDuplicate: r.status === 'duplicate'
+        });
+        addLog(papers[papers.length-1].id, 'IMPORT', `Excel导入新增: ${r.originalId}`);
+    });
+
+    update.forEach(r => {
+        const idx = papers.findIndex(p => p.id === r.id);
+        if (idx >= 0) {
+            const wasDup = papers[idx].wasDuplicate || r.status === 'duplicate';
+            papers[idx] = {...papers[idx], ...r, salesPerson: papers[idx].salesPerson || matchSalesPerson(r.originalId), wasDuplicate: wasDup};
+            addLog(r.id, 'IMPORT', `Excel导入更新: ${r.originalId}`);
+        }
+    });
+
+    batches.push({
+        time: new Date().toISOString(),
+        addCount: add.length,
+        updateCount: update.length,
+        dupCount: dup.length,
+        failCount: fail.length,
+        items: [
+            ...add.map(x => ({ type: 'add', originalId: x.originalId, title: x.title })),
+            ...update.map(x => ({ type: 'update', originalId: x.originalId, title: x.title })),
+            ...dup.map(x => ({ type: 'dup', originalId: x.originalId })),
+            ...fail.map(x => ({ type: 'fail', originalId: x.originalId || '(空)', reason: '缺少原编号' }))
+        ]
+    });
+
+    importQueue = null;
+    saveData();
+    closeModal('importModal');
+    renderStats();
+    renderTable();
+    showToast(`导入完成：新增${add.length} 更新${update.length}`, 'success');
+}
+
+function exportExcel() {
+    const data = getFilteredData().map(p => ({
+        '原编号': p.originalId,
+        '投稿ID': p.submissionId,
+        '会议名称': p.meetingName,
+        '论文标题': p.title,
+        '状态': STATUS_MAP[p.status]?.label || p.status,
+        '销售老师': p.salesPerson,
+        '上传日期': p.uploadDate,
+        '状态变更': p.requestDate,
+        '变更完成': p.withdrawDate,
+        '备注': p.remark
+    }));
+    
+    const ws = XLSX.utils.json_to_sheet(data);
+    
+    // 列宽与 HTML 表格保持一致（不含操作列）
+    ws['!cols'] = [
+        { wpx: 90 },   // 原编号
+        { wpx: 90 },   // 投稿ID
+        { wpx: 120 },  // 会议名称
+        { wpx: 160 },  // 论文标题
+        { wpx: 70 },   // 状态
+        { wpx: 80 },   // 销售老师
+        { wpx: 90 },   // 上传日期
+        { wpx: 90 },   // 申请日期
+        { wpx: 90 },   // 完成日期
+        { wpx: 110 }   // 备注
+    ];
+    
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, '论文数据');
+    XLSX.writeFile(wb, `论文导出_${new Date().toISOString().split('T')[0]}.xlsx`);
+    showToast('Excel已导出', 'success');
+}
+
+// ==================== 导入历史记录 ====================
+function showImportHistory() {
+    const body = document.getElementById('historyBody');
+    if (!batches.length) {
+        body.innerHTML = '<div style="text-align: center; color: var(--text-tertiary); padding: 40px;">暂无导入记录</div>';
+        document.getElementById('historyModal').classList.add('active');
+        return;
+    }
+
+    body.innerHTML = '<div class="batch-list">' + batches.slice().reverse().map((b, idx) => {
+        const realIdx = batches.length - 1 - idx;
+        const time = new Date(b.time).toLocaleString('zh-CN');
+        return `
+            <div class="batch-card">
+                <div class="batch-header" onclick="toggleBatchDetail(${realIdx})">
+                    <div class="batch-time">${time}</div>
+                    <div class="batch-stats">
+                        <span class="batch-stat add">+${b.addCount}</span>
+                        <span class="batch-stat update">~${b.updateCount}</span>
+                        <span class="batch-stat dup">=${b.dupCount}</span>
+                        <span class="batch-stat fail">!${b.failCount}</span>
+                        <span style="font-size: 11px; color: var(--text-tertiary); margin-left: 8px;">${b.items?.length || 0} 条明细</span>
+                    </div>
+                </div>
+                <div class="batch-detail" id="batchDetail_${realIdx}">
+                    ${renderBatchItems(b.items || [])}
+                </div>
+            </div>
+        `;
+    }).join('') + '</div>';
+    
+    document.getElementById('historyModal').classList.add('active');
+}
+
+function renderBatchItems(items) {
+    if (!items.length) return '<div style="padding: 8px 16px; color: var(--text-tertiary); font-size: 12px;">无详细记录</div>';
+    
+    const sections = { add: [], update: [], dup: [], fail: [] };
+    items.forEach(i => {
+        if (sections[i.type]) sections[i.type].push(i);
+    });
+    
+    let html = '';
+    if (sections.add.length) {
+        html += `<div class="detail-section"><div class="detail-title" style="color: var(--success);">🟢 新增 (${sections.add.length})</div>`;
+        sections.add.forEach(i => {
+            html += `<div class="detail-item"><span>${escapeHtml(i.originalId)}</span><span style="color:var(--text-tertiary);">${escapeHtml(i.title?.substring(0,30) || '')}</span></div>`;
+        });
+        html += '</div>';
+    }
+    if (sections.update.length) {
+        html += `<div class="detail-section"><div class="detail-title" style="color: var(--accent);">🔵 更新 (${sections.update.length})</div>`;
+        sections.update.forEach(i => {
+            html += `<div class="detail-item"><span>${escapeHtml(i.originalId)}</span><span style="color:var(--text-tertiary);">${escapeHtml(i.title?.substring(0,30) || '')}</span></div>`;
+        });
+        html += '</div>';
+    }
+    if (sections.dup.length) {
+        html += `<div class="detail-section"><div class="detail-title" style="color: var(--purple);">🟣 重复 (${sections.dup.length})</div>`;
+        sections.dup.forEach(i => {
+            html += `<div class="detail-item"><span>${escapeHtml(i.originalId)}</span></div>`;
+        });
+        html += '</div>';
+    }
+    if (sections.fail.length) {
+        html += `<div class="detail-section"><div class="detail-title" style="color: var(--error);">🔴 失败 (${sections.fail.length})</div>`;
+        sections.fail.forEach(i => {
+            html += `<div class="detail-item fail"><span>${escapeHtml(i.originalId)}</span><span>${escapeHtml(i.reason || '')}</span></div>`;
+        });
+        html += '</div>';
+    }
+    return html;
+}
+
+function toggleBatchDetail(idx) {
+    const el = document.getElementById(`batchDetail_${idx}`);
+    el.classList.toggle('active');
+}
+
+function clearAllBatches() {
+    if (!confirm('清空所有导入记录？此操作不可恢复。')) return;
+    batches = [];
+    saveData();
+    closeModal('historyModal');
+    showToast('导入记录已清空', 'success');
+}
+
+// ==================== 备份与恢复 ====================
+function exportBackup() {
+    const data = {
+        version: '2.0',
+        exportTime: new Date().toISOString(),
+        papers: papers.filter(p => !p.isDeleted),
+        logs: logs,
+        batches: batches,
+        config: config
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `论文备份_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    showToast('备份已导出', 'success');
+}
+
+function importBackup() {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = '.json';
+    input.onchange = e => {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = ev => {
+            try {
+                const data = JSON.parse(ev.target.result);
+                if (data.papers) {
+                    if (confirm(`备份文件包含 ${data.papers.length} 条记录，当前有 ${papers.filter(p=>!p.isDeleted).length} 条。\n点击"确定"覆盖现有数据，点击"取消"合并（备份数据优先）`)) {
+                        papers = data.papers.map(p => ({...p, isDeleted: 0}));
+                        logs = data.logs || [];
+                        batches = data.batches || [];
+                    } else {
+                        data.papers.forEach(bp => {
+                            const idx = papers.findIndex(p => p.originalId === bp.originalId);
+                            if (idx >= 0) papers[idx] = {...bp, isDeleted: 0};
+                            else papers.push({...bp, isDeleted: 0});
+                        });
+                        if (data.batches) batches = [...batches, ...data.batches];
+                    }
+                    if (data.config) config = {...config, ...data.config};
+                    saveData();
+                    renderStats();
+                    renderTable();
+                    showToast('数据已恢复', 'success');
+                }
+            } catch(ex) {
+                showToast('文件解析失败', 'error');
+            }
+        };
+        reader.readAsText(file);
+    };
+    input.click();
+}
+
+// ==================== 设置 ====================
+function openConfig() {
+    const rules = Object.entries(config.salesRules).map(([k,v]) => `${k}=${v}`).join('\n');
+    document.getElementById('configRules').value = rules;
+    document.getElementById('configDefault').value = config.defaultTeacher;
+    document.getElementById('configPageSize').value = String(config.pageSize);
+    const themeBtn = document.getElementById('configThemeBtn');
+    if (themeBtn) {
+        themeBtn.textContent = document.documentElement.getAttribute('data-theme') === 'dark' ? '☀️ 切换' : '🌙 切换';
+    }
+    document.getElementById('configModal').classList.add('active');
+}
+
+function saveConfig() {
+    const lines = document.getElementById('configRules').value.split('\n');
+    const rules = {};
+    lines.forEach(line => {
+        const [k,v] = line.split('=');
+        if (k && v) rules[k.trim()] = v.trim();
+    });
+    config.salesRules = rules;
+    config.defaultTeacher = document.getElementById('configDefault').value.trim();
+    config.pageSize = parseInt(document.getElementById('configPageSize').value) || 15;
+    saveData();
+    closeModal('configModal');
+    renderTable();
+    showToast('配置已保存', 'success');
+}
+
+// ==================== 回收站 ====================
+function showRecycleBin() {
+    const deleted = papers.filter(p => p.isDeleted);
+    const tbody = document.getElementById('recycleBody');
+    tbody.innerHTML = deleted.length ? deleted.map(p => `
+        <tr>
+            <td style="font-family:monospace;font-size:12px;">${escapeHtml(p.originalId)}</td>
+            <td>${escapeHtml(p.title)}</td>
+            <td style="font-size:11px;color:var(--text-tertiary);">${p.deletedAt?.substring(0,10) || '-'}</td>
+            <td style="text-align:right;"><button class="btn btn-primary btn-sm" onclick="restorePaper('${p.id}')">还原</button></td>
+        </tr>
+    `).join('') : '<tr><td colspan="4" style="text-align:center;color:var(--text-tertiary);padding:24px;">回收站为空</td></tr>';
+    document.getElementById('recycleModal').classList.add('active');
+}
+
+// ==================== 主题 ====================
+function toggleTheme() {
+    const html = document.documentElement;
+    const current = html.getAttribute('data-theme');
+    const next = current === 'light' ? 'dark' : 'light';
+    html.setAttribute('data-theme', next);
+    config.theme = next;
+    document.getElementById('themeBtn').textContent = next === 'light' ? '🌙' : '☀️';
+    saveData();
+}
+
+// ==================== 弹窗控制 ====================
+function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+}
+
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    overlay.addEventListener('click', e => {
+        if (e.target === overlay) overlay.classList.remove('active');
+    });
+});
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+        document.querySelectorAll('.modal-overlay.active').forEach(m => m.classList.remove('active'));
+    }
+});
+
+window.onload = init;
+</script>
+</body>
+</html>
