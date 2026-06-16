@@ -1727,7 +1727,7 @@ async function loadData() {
     // 优先尝试从 GitHub 加载（raw 文件公开，不需要 Token）
     if (window.location.protocol === 'https:') {
         try {
-            const rawUrl = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/${GITHUB_FILE}`;
+            const rawUrl = `https://cdn.jsdelivr.net/${GITHUB_USER}/${GITHUB_REPO}/main/${GITHUB_FILE}`;
             const res = await fetch(rawUrl + '?t=' + Date.now());
             if (res.ok) {
                 const data = await res.json();
