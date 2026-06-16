@@ -1724,8 +1724,8 @@ async function syncToGitHub(payload) {
 async function loadData() {
     let loaded = false;
 
-    // 优先尝试从 GitHub 加载（网络版）
-    if (window.location.protocol === 'https:' && GITHUB_TOKEN) {
+    // 优先尝试从 GitHub 加载（raw 文件公开，不需要 Token）
+    if (window.location.protocol === 'https:') {
         try {
             const rawUrl = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/${GITHUB_FILE}`;
             const res = await fetch(rawUrl + '?t=' + Date.now());
