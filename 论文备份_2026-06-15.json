@@ -1,6 +1,4 @@
 {
-  "version": "2.0",
-  "exportTime": "2026-06-16T05:36:39.308Z",
   "papers": [
     {
       "id": "1781491471581",
@@ -3033,5 +3031,6 @@
     "defaultTeacher": "方老师",
     "pageSize": 15,
     "theme": "light"
-  }
+  },
+  "savedAt": "2026-06-16T06:08:40.867Z"
 }
