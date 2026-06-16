@@ -865,6 +865,7 @@
 <base target="_blank">
 <base target="_blank">
 <base target="_blank">
+<base target="_blank">
 </head>
 <body>
 
@@ -1243,6 +1244,31 @@
 
                     <div style="height: 1px; background: var(--border-light); margin: 16px 0;"></div>
 
+                    <!-- GitHub 网络同步 -->
+                    <div class="backup-section">
+                        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+                            <div>
+                                <div style="font-weight: 600; font-size: 13px; color: var(--text-primary);">🔑 GitHub 网络同步</div>
+                                <div class="settings-hint" style="margin-top: 2px;">部署到 GitHub Pages 后，输入 Token 即可多设备同步数据</div>
+                            </div>
+                            <span id="githubSyncStatus" class="backup-status">未启用</span>
+                        </div>
+                        <div class="form-unit" style="margin-top: 10px;">
+                            <label class="form-label" style="font-size: 11px;">GitHub Personal Access Token</label>
+                            <input class="form-input" type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxx" style="font-family: monospace;">
+                            <div class="settings-hint">Token 仅保存在本地浏览器，不会上传到任何服务器</div>
+                        </div>
+                        <div class="tool-row" style="margin-top: 10px;">
+                            <button class="btn btn-primary btn-sm" onclick="saveGitHubToken()" style="flex: 1;">💾 保存 Token</button>
+                            <button class="btn btn-secondary btn-sm" onclick="clearGitHubToken()" style="flex: 1;">🚫 清除</button>
+                        </div>
+                        <div class="settings-hint" style="margin-top: 8px; color: var(--warning);">
+                            ⚠️ 首次使用：先创建 GitHub 仓库并上传 JSON 文件，再生成 Token（需勾选 repo 权限）
+                        </div>
+                    </div>
+
+                    <div style="height: 1px; background: var(--border-light); margin: 16px 0;"></div>
+
                     <!-- 手动操作 -->
                     <div class="backup-section">
                         <div style="font-weight: 600; font-size: 13px; color: var(--text-primary); margin-bottom: 10px;">手动操作</div>
@@ -1291,6 +1317,37 @@
 </div>
 
 <script>
+// ==================== GitHub 网络版配置 ====================
+// 部署后修改以下配置，或在设置页面输入 Token
+const GITHUB_USER = 'Mjx1997';      // ← 改成你的 GitHub 用户名
+const GITHUB_REPO = 'paper-manager';               // ← 改成你的仓库名，如 paper-manager
+const GITHUB_FILE = '论文备份_2026-06-15.json'; // ← 改成你的 JSON 文件名
+let GITHUB_TOKEN = localStorage.getItem('github_token') || ''; // 从设置页面输入
+let githubSyncEnabled = false; // 是否启用 GitHub 同步
+
+// 检测当前环境：如果是 https 且配置了 Token，自动启用网络版
+function checkNetworkMode() {
+    const isHttps = window.location.protocol === 'https:';
+    const hasToken = !!GITHUB_TOKEN;
+    githubSyncEnabled = isHttps && hasToken;
+
+    // 更新页面标识
+    const badge = document.querySelector('.app-header span');
+    if (badge) {
+        if (githubSyncEnabled) {
+            badge.textContent = '网络版';
+            badge.style.background = '#f6ffed';
+            badge.style.color = '#389e0d';
+            badge.style.borderColor = '#b7eb8f';
+        } else {
+            badge.textContent = '本地版';
+            badge.style.background = '';
+            badge.style.color = '';
+            badge.style.borderColor = '';
+        }
+    }
+}
+
 // ==================== 自动备份系统 ====================
 let autoBackupHandle = null;
 let autoBackupTimer = null;
@@ -1604,26 +1661,113 @@ function saveData() {
     const data = { papers, logs, batches, config, savedAt: new Date().toISOString() };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
     triggerAutoBackup();
+
+    // 网络版：同步到 GitHub
+    if (githubSyncEnabled && GITHUB_TOKEN) {
+        syncToGitHub(data);
+    }
 }
 
-function loadData() {
+// ========== GitHub 同步：写入仓库 ==========
+async function syncToGitHub(payload) {
     try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        if (raw) {
-            const data = JSON.parse(raw);
-            if (data.papers) papers = data.papers;
-            if (data.logs) logs = data.logs;
-            if (data.batches) batches = data.batches;
-            if (data.config) config = { ...config, ...data.config };
-            return true;
+        const apiUrl = `https://api.github.com/repos/${GITHUB_USER}/${GITHUB_REPO}/contents/${GITHUB_FILE}`;
+
+        // 1. 获取当前文件 SHA
+        const getRes = await fetch(apiUrl, {
+            headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
+        });
+
+        let sha = '';
+        if (getRes.status === 200) {
+            const fileInfo = await getRes.json();
+            sha = fileInfo.sha;
+        } else if (getRes.status === 404) {
+            // 文件不存在，创建新文件，不需要 SHA
+            sha = '';
+        } else {
+            console.error('GitHub 获取文件失败', getRes.status);
+            return;
         }
-    } catch (e) { console.error('加载数据失败', e); }
-    return false;
+
+        // 2. 编码内容
+        const content = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
+
+        // 3. 提交更新
+        const body = {
+            message: `更新论文数据 ${new Date().toLocaleString('zh-CN')}`,
+            content: content
+        };
+        if (sha) body.sha = sha;
+
+        const putRes = await fetch(apiUrl, {
+            method: 'PUT',
+            headers: {
+                'Authorization': `token ${GITHUB_TOKEN}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(body)
+        });
+
+        if (putRes.ok) {
+            console.log('✅ GitHub 同步成功');
+        } else {
+            const err = await putRes.json();
+            console.error('GitHub 同步失败', err);
+            showToast('GitHub 同步失败: ' + (err.message || '未知错误'), 'error');
+        }
+    } catch (e) {
+        console.error('GitHub 同步异常', e);
+    }
+}
+
+async function loadData() {
+    let loaded = false;
+
+    // 优先尝试从 GitHub 加载（网络版）
+    if (window.location.protocol === 'https:' && GITHUB_TOKEN) {
+        try {
+            const rawUrl = `https://raw.githubusercontent.com/${GITHUB_USER}/${GITHUB_REPO}/main/${GITHUB_FILE}`;
+            const res = await fetch(rawUrl + '?t=' + Date.now());
+            if (res.ok) {
+                const data = await res.json();
+                if (data.papers) papers = data.papers;
+                if (data.logs) logs = data.logs;
+                if (data.batches) batches = data.batches;
+                if (data.config) config = { ...config, ...data.config };
+                loaded = true;
+                console.log('✅ 从 GitHub 加载数据成功');
+            }
+        } catch (e) {
+            console.log('GitHub 加载失败，回退本地', e);
+        }
+    }
+
+    // 回退本地 localStorage
+    if (!loaded) {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+            if (raw) {
+                const data = JSON.parse(raw);
+                if (data.papers) papers = data.papers;
+                if (data.logs) logs = data.logs;
+                if (data.batches) batches = data.batches;
+                if (data.config) config = { ...config, ...data.config };
+                loaded = true;
+            }
+        } catch (e) { console.error('加载数据失败', e); }
+    }
+
+    return loaded;
 }
 
 // ==================== 初始化 ====================
-function init() {
-    if (!loadData()) {
+async function init() {
+    // 先检查网络模式
+    checkNetworkMode();
+
+    const loaded = await loadData();
+    if (!loaded) {
         papers = [
             { id: '1', originalId: '51-001', title: '基于深度学习的图像分类方法研究', submissionId: 'CVPR-2026-12345', meetingName: 'CVPR 2026', salesPerson: '周老师', status: 'uploaded', uploadDate: '2026-06-01', requestDate: '', withdrawDate: '', acceptDate: '', remark: '初稿已上传，等待审稿', isDeleted: 0, wasDuplicate: false },
             { id: '2', originalId: '52-102', title: '自然语言处理中的注意力机制优化', submissionId: 'ACL-2026-67890', meetingName: 'ACL 2026', salesPerson: '康老师', status: 'uploaded', uploadDate: '2026-05-20', requestDate: '', withdrawDate: '', acceptDate: '', remark: '已上传', isDeleted: 0, wasDuplicate: false },
@@ -2641,6 +2785,53 @@ function saveConfig() {
     showToast('配置已保存', 'success');
 }
 
+// ========== GitHub Token 管理 ==========
+function updateGitHubStatusUI() {
+    const el = document.getElementById('githubSyncStatus');
+    if (!el) return;
+    if (githubSyncEnabled) {
+        el.textContent = '已启用';
+        el.className = 'backup-status active';
+    } else if (GITHUB_TOKEN) {
+        el.textContent = '待部署';
+        el.className = 'backup-status';
+    } else {
+        el.textContent = '未启用';
+        el.className = 'backup-status';
+    }
+}
+
+function saveGitHubToken() {
+    const token = document.getElementById('githubToken').value.trim();
+    if (!token) {
+        showToast('请输入 Token', 'error');
+        return;
+    }
+    if (!token.startsWith('ghp_') && !token.startsWith('github_pat_')) {
+        showToast('Token 格式不正确，应以 ghp_ 或 github_pat_ 开头', 'warning');
+    }
+    localStorage.setItem('github_token', token);
+    GITHUB_TOKEN = token;
+    checkNetworkMode();
+    updateGitHubStatusUI();
+    showToast('GitHub Token 已保存，数据将同步到仓库', 'success');
+
+    // 立即尝试同步一次
+    const data = { papers, logs, batches, config, savedAt: new Date().toISOString() };
+    syncToGitHub(data);
+}
+
+function clearGitHubToken() {
+    localStorage.removeItem('github_token');
+    GITHUB_TOKEN = '';
+    checkNetworkMode();
+    updateGitHubStatusUI();
+    const input = document.getElementById('githubToken');
+    if (input) input.value = '';
+    showToast('已清除 GitHub Token，切换为本地模式', 'info');
+}
+
+
 // ==================== 回收站 ====================
 function showRecycleBin() {
     const deleted = papers.filter(p => p.isDeleted);
@@ -2684,7 +2875,7 @@ document.addEventListener('keydown', e => {
     }
 });
 
-window.onload = init;
+window.onload = () => init();
 </script>
 </body>
 </html>
