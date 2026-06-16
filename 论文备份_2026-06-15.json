@@ -195,16 +195,15 @@
     {
       "id": "1781491471593",
       "originalId": "FTECE-1216",
-      "title": "Local High-Concentration Electrolyte Design and Its Effect on Low-Temperature Performance of Lithium-Metal Batteries",
       "submissionId": "",
+      "title": "Local High-Concentration Electrolyte Design and Its Effect on Low-Temperature Performance of Lithium-Metal Batteries",
       "meetingName": "",
+      "salesPerson": "陈老师",
       "status": "rejected",
       "uploadDate": "2026-06-11",
       "requestDate": "2026-06-12",
       "withdrawDate": "2026-06-12",
-      "acceptDate": "",
       "remark": "",
-      "salesPerson": "陈老师",
       "isDeleted": 0,
       "wasDuplicate": false
     },
@@ -501,7 +500,7 @@
       "title": "Energy Consumption Analysis and Optimization Study of Coal-to-Oil and Chemical Production Processes Based on Computer Simulation",
       "submissionId": "GEESD2026-985",
       "meetingName": "7th International Conference on Green Energy, Environment and Sustainable Development",
-      "status": "uploaded",
+      "status": "duplicate",
       "uploadDate": "2026-06-08",
       "requestDate": "",
       "withdrawDate": "",
@@ -509,7 +508,7 @@
       "remark": "",
       "salesPerson": "陈老师",
       "isDeleted": 0,
-      "wasDuplicate": false
+      "wasDuplicate": true
     },
     {
       "id": "1781491471613",
@@ -2334,6 +2333,24 @@
       "action": "UPDATE",
       "detail": "编辑: EUEER-4603171",
       "time": "2026-06-16 05:27"
+    },
+    {
+      "itemId": "1781491471593",
+      "action": "UPDATE",
+      "detail": "编辑: FTECE-1216",
+      "time": "2026-06-16 06:20"
+    },
+    {
+      "itemId": "1781491471593",
+      "action": "UPDATE",
+      "detail": "编辑: FTECE-1216",
+      "time": "2026-06-16 06:21"
+    },
+    {
+      "itemId": "1781491471612",
+      "action": "STATUS",
+      "detail": "已上传 → 重复",
+      "time": "2026-06-16 06:25"
     }
   ],
   "batches": [
@@ -3032,5 +3049,5 @@
     "pageSize": 15,
     "theme": "light"
   },
-  "savedAt": "2026-06-16T06:20:23.920Z"
+  "savedAt": "2026-06-16T06:25:05.920Z"
 }
