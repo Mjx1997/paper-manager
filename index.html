@@ -1321,7 +1321,7 @@
 // 部署后修改以下配置，或在设置页面输入 Token
 const GITHUB_USER = 'Mjx1997';      // ← 改成你的 GitHub 用户名
 const GITHUB_REPO = 'paper-manager';               // ← 改成你的仓库名，如 paper-manager
-const GITHUB_FILE = '论文备份_2026-06-15.json'; // ← 改成你的 JSON 文件名
+const GITHUB_FILE = 'data.json'; // ← 改成你的 JSON 文件名
 let GITHUB_TOKEN = localStorage.getItem('github_token') || ''; // 从设置页面输入
 let githubSyncEnabled = false; // 是否启用 GitHub 同步
 
@@ -1422,7 +1422,7 @@ function updateBackupStatusUI(state) {
 
 async function setupAutoBackup() {
     if (!window.showSaveFilePicker) {
-        showToast('当前浏览器或环境不支持文件授权，请使用"自动下载"兜底方案', 'error');
+        showToast('当前浏览器或环境不支持文件授权', 'error');
         return;
     }
     try {
