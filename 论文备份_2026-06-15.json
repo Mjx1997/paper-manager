@@ -548,7 +548,7 @@
       "title": "Research on Mechanisms of Roadway Surrounding Rock Instability and Stability Control Technologies During Final Mining Period: A Case Study of the 51109 Working Face at Lijiahao Coal Mine",
       "submissionId": "GEESD2026-981",
       "meetingName": "7th International Conference on Green Energy, Environment and Sustainable Development",
-      "status": "uploaded",
+      "status": "duplicate",
       "uploadDate": "2026-06-08",
       "requestDate": "",
       "withdrawDate": "",
@@ -556,7 +556,7 @@
       "remark": "",
       "salesPerson": "陈老师",
       "isDeleted": 0,
-      "wasDuplicate": false
+      "wasDuplicate": true
     },
     {
       "id": "1781491471616",
@@ -2351,6 +2351,12 @@
       "action": "STATUS",
       "detail": "已上传 → 重复",
       "time": "2026-06-16 06:25"
+    },
+    {
+      "itemId": "1781491471615",
+      "action": "STATUS",
+      "detail": "已上传 → 重复",
+      "time": "2026-06-16 06:25"
     }
   ],
   "batches": [
@@ -3049,5 +3055,5 @@
     "pageSize": 15,
     "theme": "light"
   },
-  "savedAt": "2026-06-16T06:25:05.920Z"
+  "savedAt": "2026-06-16T06:25:20.464Z"
 }
